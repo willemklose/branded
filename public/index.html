@@ -273,7 +273,6 @@ socket.on('playerState', (state) => {
     show('screen-voting');
     document.getElementById('vote-round-badge').textContent = `Round ${state.round} of ${state.maxRounds}`;
     document.getElementById('vote-prompt-text').innerHTML = formatPrompt(state.prompt);
-    updateTimer(document.getElementById('vote-timer'), state.timeLeft);
 
     const container = document.getElementById('vote-submissions');
     const locked = state.hasVoted;
