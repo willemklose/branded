@@ -267,7 +267,12 @@
 <!-- ─── Lobby ──────────────────────────────────────── -->
 <div id="h-lobby" class="host-screen active">
   <div class="logo" style="font-size:clamp(3rem,8vw,6rem)">Branded</div>
-  <p style="color:var(--muted); font-size:1.1rem">Players join at <strong style="color:var(--primary-glow)" id="join-url"></strong></p>
+  <p style="color:var(--muted); font-size:1.1rem"><span id="join-url-label">Players join at</span> <strong style="color:var(--primary-glow)" id="join-url"></strong></p>
+
+  <div style="display:flex; gap:0.5rem; align-items:center">
+    <button class="btn btn-ghost" id="lang-en" onclick="setLang('en')" style="min-height:36px; padding:0 1rem; font-size:0.9rem">🇬🇧 English</button>
+    <button class="btn btn-ghost" id="lang-de" onclick="setLang('de')" style="min-height:36px; padding:0 1rem; font-size:0.9rem">🇩🇪 Deutsch</button>
+  </div>
 
   <div class="lobby-wrap">
     <div class="big-player-list" id="lobby-player-list">
@@ -276,43 +281,39 @@
 
     <div style="display:flex; gap:0.75rem; align-items:center; max-width:480px; width:100%">
       <input type="text" id="host-name-input" placeholder="Your name (join as player)" maxlength="20" autocomplete="off" style="flex:1">
-      <button class="btn btn-ghost" id="host-join-btn" onclick="hostJoinAsPlayer()">Join</button>
+      <button class="btn btn-ghost" id="host-join-btn" onclick="hostJoinAsPlayer()">Beitreten</button>
     </div>
     <div class="error-msg" id="host-join-error" style="margin-top:-0.5rem"></div>
 
     <div class="round-settings">
-      <label style="font-weight:600; color:var(--muted)">Rounds</label>
+      <label id="rounds-label" style="font-weight:600; color:var(--muted)">Rounds</label>
       <input type="number" id="round-count" value="5" min="1" max="10">
-      <button class="btn btn-accent" id="start-btn" onclick="startGame()" disabled>
-        Start Game
-      </button>
+      <button class="btn btn-accent" id="start-btn" onclick="startGame()" disabled>Start Game</button>
     </div>
     <p class="subtitle" id="start-hint" style="font-size:0.85rem">Need at least 2 players to start</p>
 
     <!-- List editor -->
     <details style="width:100%; max-width:800px; text-align:left">
-      <summary style="cursor:pointer; color:var(--muted); font-size:0.9rem; font-weight:600; padding:0.5rem 0; list-style:none; display:flex; align-items:center; gap:0.5rem">
-        <span>▸</span> Edit lists
-      </summary>
+      <summary id="edit-lists-summary" style="cursor:pointer; color:var(--muted); font-size:0.9rem; font-weight:600; padding:0.5rem 0; list-style:none; display:flex; align-items:center; gap:0.5rem">▸ Edit lists</summary>
       <div style="margin-top:1rem; display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem">
         <div class="side-panel">
-          <div class="side-title">Business types <span id="biz-count" style="font-weight:400"></span></div>
+          <div class="side-title"><span id="biz-title">Business types</span> <span id="biz-count" style="font-weight:400"></span></div>
           <textarea id="biz-list" rows="10" style="font-size:0.8rem; line-height:1.6; font-family:monospace"></textarea>
           <p style="font-size:0.75rem; color:var(--muted); margin-top:0.25rem">One per line</p>
         </div>
         <div class="side-panel">
-          <div class="side-title">Products / services <span id="prod-count" style="font-weight:400"></span></div>
+          <div class="side-title"><span id="prod-title">Products / services</span> <span id="prod-count" style="font-weight:400"></span></div>
           <textarea id="prod-list" rows="10" style="font-size:0.8rem; line-height:1.6; font-family:monospace"></textarea>
           <p style="font-size:0.75rem; color:var(--muted); margin-top:0.25rem">One per line</p>
         </div>
         <div class="side-panel">
-          <div class="side-title">Themes <span style="font-weight:400;color:var(--muted)">(20% chance)</span> <span id="theme-count" style="font-weight:400"></span></div>
+          <div class="side-title"><span id="theme-title">Themes</span> <span id="theme-note" style="font-weight:400;color:var(--muted)">(20% chance)</span> <span id="theme-count" style="font-weight:400"></span></div>
           <textarea id="theme-list" rows="10" style="font-size:0.8rem; line-height:1.6; font-family:monospace"></textarea>
           <p style="font-size:0.75rem; color:var(--muted); margin-top:0.25rem">One per line · used as "[theme]-themed [business]"</p>
         </div>
       </div>
       <div style="display:flex; gap:0.75rem; margin-top:0.75rem; align-items:center">
-        <button class="btn btn-primary" onclick="saveLists()">Save lists</button>
+        <button class="btn btn-primary" id="save-lists-btn" onclick="saveLists()">Save lists</button>
         <span id="save-status" style="font-size:0.85rem; color:var(--green)"></span>
       </div>
     </details>
@@ -324,7 +325,7 @@
   <div class="game-layout">
     <!-- Left: players status -->
     <div class="side-panel">
-      <div class="side-title">Players</div>
+      <div class="side-title players-title">Players</div>
       <div id="sub-player-list"></div>
     </div>
 
@@ -332,7 +333,7 @@
     <div class="center-panel">
       <div class="round-badge" id="h-sub-round"></div>
       <div class="prompt-box" style="max-width:100%">
-        <div class="prompt-label">Brand this business</div>
+        <div class="prompt-label brand-label">Brand this business</div>
         <div class="prompt-text" id="h-sub-prompt" style="font-size:clamp(1.5rem,3.5vw,2.5rem)"></div>
       </div>
       <div class="big-timer" id="h-sub-timer">90</div>
@@ -351,13 +352,13 @@
       <div id="h-my-passed" style="display:none; color:var(--muted); font-weight:700">Passed</div>
 
       <div class="host-controls">
-        <button class="btn btn-ghost" onclick="skipTimer()">Skip timer →</button>
+        <button class="btn btn-ghost skip-timer-btn" onclick="skipTimer()">Skip timer →</button>
       </div>
     </div>
 
     <!-- Right: scores -->
     <div class="side-panel">
-      <div class="side-title">Scores</div>
+      <div class="side-title scores-title">Scores</div>
       <div id="sub-scores"></div>
     </div>
   </div>
@@ -367,14 +368,12 @@
 <div id="h-presenting" class="host-screen">
   <div class="round-badge" id="h-pres-round"></div>
   <div class="prompt-box" style="max-width:720px">
-    <div class="prompt-label">The prompt was</div>
+    <div class="prompt-label pres-label">The prompt was</div>
     <div class="prompt-text" id="h-pres-prompt" style="font-size:clamp(1.3rem,2.5vw,2rem)"></div>
   </div>
-  <p style="color:var(--muted); font-size:1rem">Read these out loud, then start the vote</p>
+  <p id="pres-instr" style="color:var(--muted); font-size:1rem">Read these out loud, then start the vote</p>
   <div class="host-submissions" id="h-pres-submissions" style="max-width:700px; width:100%"></div>
-  <button class="btn btn-accent" style="margin-top:0.5rem; font-size:1.1rem; padding:1rem 2.5rem" onclick="beginVoting()">
-    Start Voting →
-  </button>
+  <button id="start-voting-btn" class="btn btn-accent" style="margin-top:0.5rem; font-size:1.1rem; padding:1rem 2.5rem" onclick="beginVoting()">Start Voting →</button>
 </div>
 
 <!-- ─── Voting ─────────────────────────────────────── -->
@@ -382,7 +381,7 @@
   <div class="game-layout">
     <!-- Left: players voted status -->
     <div class="side-panel">
-      <div class="side-title">Players</div>
+      <div class="side-title players-title">Players</div>
       <div id="vote-player-list"></div>
     </div>
 
@@ -390,19 +389,19 @@
     <div class="center-panel">
       <div class="round-badge" id="h-vote-round"></div>
       <div class="prompt-box" style="max-width:100%">
-        <div class="prompt-label">Vote for your favorite</div>
+        <div class="prompt-label vote-label">Vote for your favorite</div>
         <div class="prompt-text" id="h-vote-prompt" style="font-size:clamp(1.2rem,2.5vw,1.8rem)"></div>
       </div>
       <div class="host-submissions" id="h-vote-submissions"></div>
       <div id="h-my-voted" style="display:none; color:var(--accent); font-weight:700; font-size:0.95rem">✓ You voted!</div>
       <div class="host-controls">
-        <button class="btn btn-ghost" onclick="skipTimer()">End voting →</button>
+        <button id="end-voting-btn" class="btn btn-ghost" onclick="skipTimer()">End voting →</button>
       </div>
     </div>
 
     <!-- Right: scores -->
     <div class="side-panel">
-      <div class="side-title">Scores</div>
+      <div class="side-title scores-title">Scores</div>
       <div id="vote-scores"></div>
     </div>
   </div>
@@ -430,7 +429,7 @@
   <div style="font-size:3rem">🏆</div>
   <div class="final-board" id="h-final-board"></div>
   <div class="host-controls" style="margin-top:1rem">
-    <button class="btn btn-primary" onclick="resetGame()">Play Again</button>
+    <button id="play-again-btn" class="btn btn-primary" onclick="resetGame()">Play Again</button>
   </div>
 </div>
 
@@ -611,12 +610,14 @@ function renderVotingSubmissions(gState, pState) {
 
 socket.on('gameState', (state) => {
   hostGameState = state;
+  applyHostLang(state.lang || 'en');
   // Lobby
   if (state.state === 'lobby') {
     showScreen('h-lobby');
     const list = document.getElementById('lobby-player-list');
+    const t = window._t || T.en;
     if (state.playerCount === 0) {
-      list.innerHTML = '<p class="text-muted">Waiting for players<span class="waiting-dots"></span></p>';
+      list.innerHTML = `<p class="text-muted">${t.waitingPlayers}<span class="waiting-dots"></span></p>`;
     } else {
       list.innerHTML = state.players.map(p =>
         `<div class="big-player-chip">${p.name}</div>`
@@ -625,7 +626,7 @@ socket.on('gameState', (state) => {
     const btn = document.getElementById('start-btn');
     btn.disabled = state.playerCount < 2;
     document.getElementById('start-hint').textContent =
-      state.playerCount < 2 ? 'Need at least 2 players to start' : `${state.playerCount} player${state.playerCount !== 1 ? 's' : ''} ready`;
+      state.playerCount < 2 ? t.needPlayers : `${state.playerCount} player${state.playerCount !== 1 ? 's' : ''} ready`;
     return;
   }
 
@@ -728,6 +729,108 @@ socket.on('timer', (t) => {
 });
 
 socket.on('hostError', showError);
+
+// ─── Language ─────────────────────────────────────────────────────────────────
+
+const T = {
+  en: {
+    subtitle:        'Players join at',
+    waitingPlayers:  'Waiting for players',
+    yourName:        'Your name (to play along)',
+    join:            'Join',
+    rounds:          'Rounds',
+    startGame:       'Start Game',
+    needPlayers:     'Need at least 2 players to start',
+    editLists:       '▸ Edit lists',
+    bizTitle:        'Business types',
+    prodTitle:       'Products / services',
+    themeTitle:      'Themes',
+    themeNote:       '(20% chance)',
+    saveLists:       'Save lists',
+    brandLabel:      'Brand this business',
+    skipTimer:       'Skip timer →',
+    submitted:       'submitted',
+    passed:          'passed',
+    presLabel:       'The prompt was',
+    presInstr:       'Read these out loud, then start the vote',
+    startVoting:     'Start Voting →',
+    voteLabel:       'Vote for your favorite',
+    endVoting:       'End voting →',
+    playersTitle:    'Players',
+    scoresTitle:     'Scores',
+    roundResults:    'results',
+    playAgain:       'Play Again',
+  },
+  de: {
+    subtitle:        'Spieler treten bei unter',
+    waitingPlayers:  'Warte auf Spieler',
+    yourName:        'Dein Name (mitspielen)',
+    join:            'Beitreten',
+    rounds:          'Runden',
+    startGame:       'Spiel starten',
+    needPlayers:     'Mindestens 2 Spieler benötigt',
+    editLists:       '▸ Listen bearbeiten',
+    bizTitle:        'Unternehmenstypen',
+    prodTitle:       'Produkte / Dienstleistungen',
+    themeTitle:      'Themen',
+    themeNote:       '(20% Chance)',
+    saveLists:       'Listen speichern',
+    brandLabel:      'Benenne dieses Unternehmen',
+    skipTimer:       'Timer überspringen →',
+    submitted:       'eingereicht',
+    passed:          'gepasst',
+    presLabel:       'Die Aufgabe lautete',
+    presInstr:       'Lies diese laut vor, dann starte die Abstimmung',
+    startVoting:     'Abstimmung starten →',
+    voteLabel:       'Stimme für deinen Favoriten',
+    endVoting:       'Abstimmung beenden →',
+    playersTitle:    'Spieler',
+    scoresTitle:     'Punkte',
+    roundResults:    'Ergebnisse',
+    playAgain:       'Nochmal spielen',
+  }
+};
+
+function applyHostLang(lang) {
+  const t = T[lang] || T.en;
+  document.getElementById('join-url-label').textContent = t.subtitle;
+  document.querySelector('#lobby-player-list').dataset.waiting = t.waitingPlayers;
+  document.getElementById('host-name-input').placeholder = t.yourName;
+  document.getElementById('host-join-btn').textContent = t.join;
+  document.getElementById('rounds-label').textContent = t.rounds;
+  document.getElementById('start-btn').textContent = t.startGame;
+  document.getElementById('edit-lists-summary').textContent = t.editLists;
+  document.getElementById('biz-title').textContent = t.bizTitle;
+  document.getElementById('prod-title').textContent = t.prodTitle;
+  document.getElementById('theme-title').textContent = t.themeTitle;
+  document.getElementById('theme-note').textContent = t.themeNote;
+  document.getElementById('save-lists-btn').textContent = t.saveLists;
+  document.querySelectorAll('.brand-label').forEach(el => el.textContent = t.brandLabel);
+  document.querySelectorAll('.skip-timer-btn').forEach(el => el.textContent = t.skipTimer);
+  document.querySelectorAll('.pres-label').forEach(el => el.textContent = t.presLabel);
+  document.getElementById('pres-instr').textContent = t.presInstr;
+  document.getElementById('start-voting-btn').textContent = t.startVoting;
+  document.querySelectorAll('.vote-label').forEach(el => el.textContent = t.voteLabel);
+  document.getElementById('end-voting-btn').textContent = t.endVoting;
+  document.querySelectorAll('.players-title').forEach(el => el.textContent = t.playersTitle);
+  document.querySelectorAll('.scores-title').forEach(el => el.textContent = t.scoresTitle);
+  document.getElementById('play-again-btn').textContent = t.playAgain;
+  // Lang buttons
+  document.getElementById('lang-en').style.borderColor = lang === 'en' ? 'var(--primary)' : '';
+  document.getElementById('lang-de').style.borderColor = lang === 'de' ? 'var(--primary)' : '';
+  // Store for dynamic use
+  window._t = t;
+}
+
+async function setLang(lang) {
+  await fetch('/api/lang', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lang })
+  });
+  applyHostLang(lang);
+  loadListEditor();
+}
 
 // ─── List editor ──────────────────────────────────────────────────────────────
 

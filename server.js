@@ -17,28 +17,42 @@ app.get('/host', (req, res) => {
 
 // ─── Lists (editable via host UI or lists.json) ───────────────────────────────
 
+let activeLang = 'en';
+
+function listsFile(lang) {
+  return path.join(__dirname, lang === 'de' ? 'lists-de.json' : 'lists.json');
+}
+
 function loadLists() {
   try {
-    return JSON.parse(fs.readFileSync(path.join(__dirname, 'lists.json'), 'utf8'));
+    return JSON.parse(fs.readFileSync(listsFile(activeLang), 'utf8'));
   } catch {
-    return { businesses: [], products: [] };
+    return { businesses: [], products: [], themes: [] };
   }
 }
 
-function saveLists(data) {
-  fs.writeFileSync(path.join(__dirname, 'lists.json'), JSON.stringify(data, null, 2));
+function saveLists(data, lang) {
+  fs.writeFileSync(listsFile(lang), JSON.stringify(data, null, 2));
 }
 
-// API for host to read/update lists
-app.get('/api/lists', (req, res) => res.json(loadLists()));
+app.get('/api/lists', (req, res) => res.json({ ...loadLists(), lang: activeLang }));
 
 app.post('/api/lists', (req, res) => {
-  const { businesses, products } = req.body;
+  const { businesses, products, themes } = req.body;
   if (!Array.isArray(businesses) || !Array.isArray(products)) {
     return res.status(400).json({ error: 'Invalid data' });
   }
-  saveLists({ businesses, products });
+  saveLists({ businesses, products, themes: themes || [] }, activeLang);
   res.json({ ok: true });
+});
+
+app.post('/api/lang', (req, res) => {
+  const { lang } = req.body;
+  if (lang === 'en' || lang === 'de') {
+    activeLang = lang;
+    broadcast();
+  }
+  res.json({ lang: activeLang });
 });
 
 // ─── Game state ───────────────────────────────────────────────────────────────
@@ -75,6 +89,12 @@ function pickPrompt() {
   } while (game.usedPrompts.has(key) && attempts < 200);
   game.usedPrompts.add(key);
 
+  if (activeLang === 'de') {
+    if (useTheme) {
+      return { type: 'theme', business: b, theme: second, text: `Ein ${second}es ${b}` };
+    }
+    return { type: 'product', business: b, product: second, text: `Ein ${b}, der auch ${second} verkauft` };
+  }
   if (useTheme) {
     return { type: 'theme', business: b, theme: second, text: `A ${second}-themed ${b}` };
   }
@@ -118,7 +138,8 @@ function hostState() {
     state: game.state, players, prompt: game.prompt,
     round: game.round, maxRounds: game.maxRounds, timeLeft: game.timeLeft,
     submissions, submittedCount, passedCount,
-    playerCount: Object.keys(game.players).length
+    playerCount: Object.keys(game.players).length,
+    lang: activeLang
   };
 }
 
@@ -143,7 +164,8 @@ function playerState(socketId) {
     state: game.state, name: p.name, score: p.score,
     hasSubmitted: p.hasSubmitted, hasVoted: p.hasVoted, hasPassed: p.hasPassed,
     prompt: game.prompt, round: game.round, maxRounds: game.maxRounds,
-    timeLeft: game.timeLeft, submissions, allPlayers
+    timeLeft: game.timeLeft, submissions, allPlayers,
+    lang: activeLang
   };
 }
 

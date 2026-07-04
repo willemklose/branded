@@ -59,11 +59,11 @@
 <div id="screen-join" class="screen active">
   <div class="inner" style="justify-content:center; min-height:100dvh">
     <div class="logo">Branded</div>
-    <p class="subtitle">The pun brand name game</p>
+    <p class="subtitle" id="p-subtitle">The pun brand name game</p>
     <div class="card flex-col" style="gap:1rem">
       <input type="text" id="name-input" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false">
       <div class="error-msg" id="join-error"></div>
-      <button class="btn btn-primary btn-full" onclick="joinGame()">Join Game</button>
+      <button class="btn btn-primary btn-full" id="p-join-btn" onclick="joinGame()">Join Game</button>
     </div>
   </div>
 </div>
@@ -73,9 +73,9 @@
   <div class="inner" style="justify-content:center; min-height:100dvh">
     <div class="logo">Branded</div>
     <div class="card flex-col">
-      <p class="text-muted" style="font-size:0.9rem">Waiting for host to start<span class="waiting-dots"></span></p>
+      <p class="text-muted" style="font-size:0.9rem"><span id="p-waiting">Waiting for host to start</span><span class="waiting-dots"></span></p>
       <div class="divider"></div>
-      <p style="font-size:0.85rem; color:var(--muted)">Players joined</p>
+      <p id="p-players-joined" style="font-size:0.85rem; color:var(--muted)">Players joined</p>
       <div class="player-list" id="lobby-players"></div>
     </div>
     <p class="subtitle" style="font-size:0.8rem">Share <strong style="color:var(--primary-glow)">this page's URL</strong> so friends can join</p>
@@ -87,7 +87,7 @@
   <div class="inner">
     <div class="round-badge" id="sub-round-badge">Round 1 of 5</div>
     <div class="prompt-box">
-      <div class="prompt-label">Brand this business</div>
+      <div class="prompt-label" id="p-brand-label">Brand this business</div>
       <div class="prompt-text" id="sub-prompt-text"></div>
     </div>
     <div class="timer" id="sub-timer">3:00</div>
@@ -97,8 +97,8 @@
         placeholder="Name, slogan, tagline — whatever pun comes to mind…"></textarea>
       <div class="char-count" id="char-count">0 / 100</div>
       <div style="display:flex; gap:0.5rem">
-        <button class="btn btn-ghost" onclick="passRound()" style="flex:0 0 auto; padding:0 1.25rem">Pass</button>
-        <button class="btn btn-accent" onclick="submitAnswer()" style="flex:1">Submit</button>
+        <button class="btn btn-ghost" id="p-pass-btn" onclick="passRound()" style="flex:0 0 auto; padding:0 1.25rem">Pass</button>
+        <button class="btn btn-accent" id="p-submit-btn" onclick="submitAnswer()" style="flex:1">Submit</button>
       </div>
     </div>
 
@@ -131,7 +131,7 @@
   <div class="inner">
     <div class="round-badge" id="vote-round-badge">Round 1 of 5</div>
     <div class="prompt-box">
-      <div class="prompt-label">Vote for your favorite</div>
+      <div class="prompt-label" id="p-vote-label">Vote for your favorite</div>
       <div class="prompt-text" id="vote-prompt-text"></div>
     </div>
     <div id="vote-submissions" style="display:flex; flex-direction:column; gap:0.75rem"></div>
@@ -206,6 +206,72 @@ function renderLeaderboard(players) {
     </div>`).join('');
 }
 
+// ─── Translations ─────────────────────────────────────────────────────────────
+
+const PT = {
+  en: {
+    subtitle:       'The pun brand name game',
+    namePlaceholder:'Your name',
+    joinBtn:        'Join Game',
+    waiting:        'Waiting for host to start',
+    playersJoined:  'Players joined',
+    brandLabel:     'Brand this business',
+    answerPlaceholder: 'Name, slogan, tagline — whatever pun comes to mind…',
+    passBtn:        'Pass',
+    submitBtn:      'Submit',
+    submitted:      '✓ Submitted! Waiting for others',
+    passed:         'Passed. Waiting for others',
+    presLabel:      'The prompt was',
+    presWaiting:    'Host is reading the answers',
+    presReady:      'Get ready to vote!',
+    voteLabel:      'Vote for your favorite',
+    voted:          '✓ Voted! Waiting for results',
+    scoresLabel:    'Scores',
+    thanks:         'Thanks for playing!',
+  },
+  de: {
+    subtitle:       'Das Wortspiel-Markennamen-Spiel',
+    namePlaceholder:'Dein Name',
+    joinBtn:        'Beitreten',
+    waiting:        'Warte auf den Host',
+    playersJoined:  'Beigetretene Spieler',
+    brandLabel:     'Benenne dieses Unternehmen',
+    answerPlaceholder: 'Name, Slogan, Tagline — was auch immer dir einfällt…',
+    passBtn:        'Passen',
+    submitBtn:      'Einreichen',
+    submitted:      '✓ Eingereicht! Warte auf andere',
+    passed:         'Gepasst. Warte auf andere',
+    presLabel:      'Die Aufgabe lautete',
+    presWaiting:    'Host liest die Antworten vor',
+    presReady:      'Bereite dich auf die Abstimmung vor!',
+    voteLabel:      'Stimme für deinen Favoriten',
+    voted:          '✓ Abgestimmt! Warte auf Ergebnisse',
+    scoresLabel:    'Punkte',
+    thanks:         'Danke fürs Mitspielen!',
+  }
+};
+
+let currentLang = 'en';
+
+function applyPlayerLang(lang) {
+  if (lang === currentLang) return;
+  currentLang = lang;
+  const t = PT[lang] || PT.en;
+  document.getElementById('p-subtitle').textContent = t.subtitle;
+  document.getElementById('name-input').placeholder = t.namePlaceholder;
+  document.getElementById('p-join-btn').textContent = t.joinBtn;
+  document.getElementById('p-waiting').textContent = t.waiting;
+  document.getElementById('p-players-joined').textContent = t.playersJoined;
+  document.getElementById('p-brand-label').textContent = t.brandLabel;
+  document.getElementById('answer-input').placeholder = t.answerPlaceholder;
+  document.getElementById('p-pass-btn').textContent = t.passBtn;
+  document.getElementById('p-submit-btn').textContent = t.submitBtn;
+  document.getElementById('submitted-confirm').firstChild.textContent = t.submitted;
+  document.getElementById('passed-confirm').firstChild.textContent = t.passed;
+  document.getElementById('p-vote-label').textContent = t.voteLabel;
+  document.getElementById('voted-msg').firstChild.textContent = t.voted;
+}
+
 function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -260,6 +326,7 @@ function vote(targetId) { socket.emit('vote', { targetId }); }
 
 socket.on('playerState', (state) => {
   currentState = state;
+  if (state.lang) applyPlayerLang(state.lang);
 
   if (state.state === 'lobby') {
     show('screen-lobby');

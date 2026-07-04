@@ -1,0 +1,47 @@
+{
+  "themes": [
+    "Weltraum", "mittelalterlich", "Piraten", "Cowboy", "Unterwasser", "Dschungel",
+    "Cyberpunk", "Steampunk", "postapokalyptisch", "Disco", "80er-Jahre",
+    "Anime", "Pokémon", "Harry Potter", "Star Wars", "Vaporwave",
+    "Cottagecore", "Dark Academia", "Gothic", "Rave", "Ritterturnier",
+    "Noir", "Märchen", "Gameshow", "Reality-TV", "Wikinger",
+    "altägyptisch", "Samurai", "Zirkus", "Wilder Westen",
+    "Minecraft", "My Little Pony", "Barbie", "Weihnachten",
+    "Halloween", "Valentinstag", "Oktoberfest", "DDR-Nostalgie"
+  ],
+  "businesses": [
+    "Friseursalon", "Bäckerei", "Fitnessstudio", "Apotheke", "Buchhandlung", "Tierhandlung",
+    "Blumenladen", "Baumarkt", "Zahnarztpraxis", "Tattoostudio",
+    "Yogastudio", "Autohaus", "Waschsalon", "Tagesspa", "Bestattungsunternehmen",
+    "Taxidermist", "Optiker", "Chiropraktiker", "Bowlingbahn",
+    "Escape Room", "Kindertagesstätte", "Anwaltskanzlei", "Schießstand",
+    "Comicbuchladen", "Plattenladen", "Antiquariat", "Pfandleihe",
+    "Nagelstudio", "Autowerkstatt", "Reisebüro", "Wahrsagerin",
+    "Karateschule", "Weinbar", "Käseladen", "Zigarrenladen",
+    "Puppentheater", "Kieferorthopäde", "Taxiunternehmen", "Kirche",
+    "Kindergarten", "Blutbank", "Friedhof", "Geisterhaus", "Kasino",
+    "Akupunkturklinik", "Abnehmprogramm", "Immobilienbüro",
+    "Einwanderungsanwalt", "Rehabklinik", "Pflegeheim", "Gefängnis",
+    "Piercingstudio", "Hypnotherapeut", "Hundesalon",
+    "Frettchenrettung", "Angelgeschäft", "Steuerberatung", "Streichelzoo",
+    "Matratzenladen", "Trampolinpark", "Axtwerfen-Bar"
+  ],
+  "products": [
+    "Gemüse", "Schusswaffen", "Hochkunst", "Rechtsberatung", "Steuererklärungen",
+    "Bestattungsplanung", "Hochzeitsplanung", "Tierpflege", "Finanzberatung",
+    "religiöse Schriften", "Babykleidung", "Lebensversicherungen", "Eheberatung",
+    "Kautionsbürgschaften", "Wahrsagerei", "Kryptoberatung",
+    "mittelalterliche Waffen", "Heimbrauerei-Zubehör", "Überwachungsausrüstung",
+    "Clownbedarf", "Bauchredner-Puppen", "exotische Gewürze",
+    "Schnellreichwerdepläne", "Wettesspezialtraining",
+    "Therapietiere", "Feuerwerkskörper", "ausgestopfte Tiere",
+    "Spukhaus-Devotionalien", "Protestschilder", "NFTs", "Erwachsenenspielzeug",
+    "Haifischzähne", "Verschwörungstheorie-Merchandise", "lebende Bienen",
+    "Billigchirurgie", "Motivationsposter", "Blähungen-Duftkerzen",
+    "Heim-DNA-Tests", "Rache-auf-Bestellung", "dubiose Medikamente",
+    "Timeshare-Präsentationen", "ungebetene Lebensratschläge", "Geisterjäger-Ausrüstung",
+    "Kunstwasser", "gefälschte Designerware", "gebrauchte Matratzen",
+    "Schneeballsystem-Starterpakete", "fragwürdige Nahrungsergänzungsmittel",
+    "rechtlich unbedenkliche Plagiate", "abgelaufene Gutscheine"
+  ]
+}
