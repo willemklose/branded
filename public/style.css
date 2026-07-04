@@ -397,6 +397,42 @@ input[type="number"]:focus { border-color: var(--primary); }
 
 .char-count.warn { color: var(--accent); }
 
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  .screen {
+    justify-content: flex-start;
+    min-height: 100dvh;   /* dynamic vh — excludes iOS browser chrome */
+    padding: 1.25rem 1rem 3rem;
+    gap: 1rem;
+  }
+
+  /* Prevent iOS auto-zoom on input focus (kicks in below 16px) */
+  input[type="text"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Larger tap targets for buttons */
+  .btn { min-height: 56px; font-size: 1.05rem; }
+
+  /* Submission vote cards: full-width, easy tap */
+  .submission-card {
+    min-height: 72px;
+    padding: 1rem 1.25rem;
+  }
+
+  /* Prompt text slightly smaller on narrow phones */
+  .prompt-text { font-size: clamp(1.1rem, 5vw, 1.5rem) !important; }
+
+  /* Char counter stays readable */
+  .char-count { font-size: 0.85rem; }
+
+  /* Bottom padding so content isn't hidden behind home indicator */
+  body { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+
 /* ── Utility ── */
 .flex-row  { display: flex; align-items: center; gap: 0.75rem; }
 .flex-col  { display: flex; flex-direction: column; gap: 0.75rem; }
