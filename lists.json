@@ -1,0 +1,47 @@
+{
+  "themes": [
+    "space", "medieval", "pirate", "cowboy", "underwater", "jungle",
+    "cyberpunk", "steampunk", "post-apocalyptic", "disco", "1980s",
+    "anime", "Pokémon", "Harry Potter", "Star Wars", "vaporwave",
+    "cottagecore", "dark academia", "goth", "rave", "renaissance faire",
+    "noir", "fairy tale", "game show", "reality TV", "Viking",
+    "ancient Egyptian", "samurai", "circus", "western saloon",
+    "Minecraft", "Among Us", "My Little Pony", "Barbie", "G.I. Joe",
+    "Christmas", "Halloween", "Valentine's Day", "tax season"
+  ],
+  "businesses": [
+    "barbershop", "bakery", "gym", "pharmacy", "bookstore", "pet store",
+    "florist", "hardware store", "dentist office", "tattoo parlor",
+    "yoga studio", "car dealership", "laundromat", "day spa", "funeral home",
+    "taxidermist", "optometrist", "chiropractor", "bowling alley",
+    "escape room", "daycare center", "law firm", "shooting range",
+    "comic book store", "record store", "antique shop", "pawn shop",
+    "nail salon", "auto mechanic", "travel agency", "fortune teller",
+    "karate studio", "wine bar", "cheese shop", "cigar lounge",
+    "puppet theater", "orthodontist", "taxicab company", "church",
+    "preschool", "blood bank", "cemetery", "haunted house", "casino",
+    "acupuncture clinic", "weight loss clinic", "real estate office",
+    "immigration lawyer", "rehab center", "nursing home", "prison",
+    "sperm bank", "piercing studio", "hypnotherapist", "dog groomer",
+    "ferret rescue", "bait shop", "tax preparation office", "petting zoo",
+    "mattress store", "trampoline park", "axe-throwing bar"
+  ],
+  "products": [
+    "vegetables", "firearms", "fine art", "legal advice", "tax preparation",
+    "funeral planning", "wedding planning", "pet grooming", "financial advice",
+    "religious texts", "baby clothes", "life insurance", "marriage counseling",
+    "bail bonds", "psychic readings", "cryptocurrency advice",
+    "medieval weapons", "home brewing supplies", "surveillance equipment",
+    "clown supplies", "ventriloquist dummies", "exotic spices",
+    "get-rich-quick schemes", "competitive eating training",
+    "emotional support animals", "fireworks", "taxidermied animals",
+    "haunted memorabilia", "protest signs", "NFTs", "adult novelties",
+    "shark teeth", "conspiracy theory merchandise", "live bees",
+    "discount surgery", "motivational posters", "flatulence-scented candles",
+    "DIY DNA test kits", "revenge-for-hire services", "bootleg pharmaceuticals",
+    "time-share presentations", "unsolicited life advice", "ghost hunting gear",
+    "artisanal water", "counterfeit designer goods", "used mattresses",
+    "pyramid scheme starter kits", "questionable dietary supplements",
+    "legally distinct knockoff toys", "expired coupons"
+  ]
+}

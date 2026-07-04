@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Branded — Host</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body { overflow: hidden; }
+
+    .host-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2.5rem 3rem;
+      gap: 1.5rem;
+      text-align: center;
+    }
+    .host-screen.active { display: flex; }
+
+    /* Lobby */
+    .lobby-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .big-player-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+
+    .big-player-chip {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      padding: 0.6rem 1.5rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .round-settings {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.5rem;
+    }
+
+    /* Game screens — 3-column layout */
+    .game-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr 220px;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1200px;
+      align-items: start;
+    }
+
+    .side-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .side-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      font-weight: 700;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .center-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    /* Host submission cards (bigger) */
+    .host-submissions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      width: 100%;
+    }
+
+    .host-sub-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    .host-sub-card.winner {
+      border-color: var(--accent);
+      box-shadow: 0 0 30px rgba(251,191,36,0.2);
+    }
+
+    .host-sub-text {
+      flex: 1;
+      font-size: 1.15rem;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .host-sub-author {
+      font-size: 0.8rem;
+      color: var(--muted);
+      min-width: 80px;
+      text-align: right;
+    }
+
+    .host-sub-votes {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--accent);
+      min-width: 2.5rem;
+      text-align: right;
+    }
+
+    .host-vote-bar {
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 2px;
+      transition: width 0.5s ease;
+      margin-top: 0.5rem;
+    }
+
+    .submission-bar-wrap {
+      width: 100%;
+    }
+
+    /* Big timer */
+    .big-timer {
+      font-size: clamp(4rem, 10vw, 7rem);
+      font-weight: 900;
+      transition: color 0.5s;
+      line-height: 1;
+    }
+    .big-timer.warn { color: var(--accent); }
+    .big-timer.urgent { color: var(--accent2); animation: pulse 0.5s infinite; }
+
+    /* Progress */
+    .progress-text {
+      font-size: 1.1rem;
+      color: var(--muted);
+    }
+
+    .progress-text span { color: var(--text); font-weight: 700; }
+
+    /* Host controls */
+    .host-controls {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Score side panel rows */
+    .score-side-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0;
+      font-size: 0.95rem;
+    }
+    .score-side-pts { color: var(--accent); font-weight: 700; font-size: 0.9rem; }
+
+    /* Final big leaderboard */
+    .final-board {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .final-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.5rem;
+      font-size: 1.3rem;
+      font-weight: 800;
+    }
+
+    .final-row.winner {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, rgba(251,191,36,0.12), var(--surface));
+      font-size: 1.5rem;
+    }
+
+    .final-pts { color: var(--accent); margin-left: auto; }
+    .final-medal { font-size: 1.6rem; }
+
+    /* Error banner */
+    #host-error {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent2);
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Lobby ──────────────────────────────────────── -->
+<div id="h-lobby" class="host-screen active">
+  <div class="logo" style="font-size:clamp(3rem,8vw,6rem)">Branded</div>
+  <p style="color:var(--muted); font-size:1.1rem">Players join at <strong style="color:var(--primary-glow)" id="join-url"></strong></p>
+
+  <div class="lobby-wrap">
+    <div class="big-player-list" id="lobby-player-list">
+      <p class="text-muted">Waiting for players<span class="waiting-dots"></span></p>
+    </div>
+
+    <div class="round-settings">
+      <label style="font-weight:600; color:var(--muted)">Rounds</label>
+      <input type="number" id="round-count" value="5" min="1" max="10">
+      <button class="btn btn-accent" id="start-btn" onclick="startGame()" disabled>
+        Start Game
+      </button>
+    </div>
+    <p class="subtitle" id="start-hint" style="font-size:0.85rem">Need at least 2 players to start</p>
+
+    <!-- List editor -->
+    <details style="width:100%; max-width:800px; text-align:left">
+      <summary style="cursor:pointer; color:var(--muted); font-size:0.9rem; font-weight:600; padding:0.5rem 0; list-style:none; display:flex; align-items:center; gap:0.5rem">
+        <span>▸</span> Edit lists
+      </summary>
+      <div style="margin-top:1rem; display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem">
+        <div class="side-panel">
+          <div class="side-title">Business types <span id="biz-count" style="font-weight:400"></span></div>
+          <textarea id="biz-list" rows="10" style="font-size:0.8rem; line-height:1.6; font-family:monospace"></textarea>
+          <p style="font-size:0.75rem; color:var(--muted); margin-top:0.25rem">One per line</p>
+        </div>
+        <div class="side-panel">
+          <div class="side-title">Products / services <span id="prod-count" style="font-weight:400"></span></div>
+          <textarea id="prod-list" rows="10" style="font-size:0.8rem; line-height:1.6; font-family:monospace"></textarea>
+          <p style="font-size:0.75rem; color:var(--muted); margin-top:0.25rem">One per line</p>
+        </div>
+        <div class="side-panel">
+          <div class="side-title">Themes <span style="font-weight:400;color:var(--muted)">(20% chance)</span> <span id="theme-count" style="font-weight:400"></span></div>
+          <textarea id="theme-list" rows="10" style="font-size:0.8rem; line-height:1.6; font-family:monospace"></textarea>
+          <p style="font-size:0.75rem; color:var(--muted); margin-top:0.25rem">One per line · used as "[theme]-themed [business]"</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:0.75rem; margin-top:0.75rem; align-items:center">
+        <button class="btn btn-primary" onclick="saveLists()">Save lists</button>
+        <span id="save-status" style="font-size:0.85rem; color:var(--green)"></span>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- ─── Submitting ─────────────────────────────────── -->
+<div id="h-submitting" class="host-screen">
+  <div class="game-layout">
+    <!-- Left: players status -->
+    <div class="side-panel">
+      <div class="side-title">Players</div>
+      <div id="sub-player-list"></div>
+    </div>
+
+    <!-- Center -->
+    <div class="center-panel">
+      <div class="round-badge" id="h-sub-round"></div>
+      <div class="prompt-box" style="max-width:100%">
+        <div class="prompt-label">Brand this business</div>
+        <div class="prompt-text" id="h-sub-prompt" style="font-size:clamp(1.5rem,3.5vw,2.5rem)"></div>
+      </div>
+      <div class="big-timer" id="h-sub-timer">90</div>
+      <div class="progress-text" id="h-sub-progress">
+        <span id="h-sub-count">0</span> / <span id="h-sub-total">0</span> submitted
+      </div>
+      <div class="host-controls">
+        <button class="btn btn-ghost" onclick="skipTimer()">Skip timer →</button>
+      </div>
+    </div>
+
+    <!-- Right: scores -->
+    <div class="side-panel">
+      <div class="side-title">Scores</div>
+      <div id="sub-scores"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Voting ─────────────────────────────────────── -->
+<div id="h-voting" class="host-screen">
+  <div class="game-layout">
+    <!-- Left: players voted status -->
+    <div class="side-panel">
+      <div class="side-title">Players</div>
+      <div id="vote-player-list"></div>
+    </div>
+
+    <!-- Center -->
+    <div class="center-panel">
+      <div class="round-badge" id="h-vote-round"></div>
+      <div class="prompt-box" style="max-width:100%">
+        <div class="prompt-label">Vote for your favorite</div>
+        <div class="prompt-text" id="h-vote-prompt" style="font-size:clamp(1.2rem,2.5vw,1.8rem)"></div>
+      </div>
+      <div class="big-timer" id="h-vote-timer">30</div>
+      <div class="host-submissions" id="h-vote-submissions"></div>
+      <div class="host-controls">
+        <button class="btn btn-ghost" onclick="skipTimer()">Skip timer →</button>
+      </div>
+    </div>
+
+    <!-- Right: scores -->
+    <div class="side-panel">
+      <div class="side-title">Scores</div>
+      <div id="vote-scores"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Round Results ──────────────────────────────── -->
+<div id="h-roundresults" class="host-screen">
+  <div class="round-badge" id="h-rr-round"></div>
+  <div class="prompt-box" style="max-width:720px">
+    <div class="prompt-label">The prompt was</div>
+    <div class="prompt-text" id="h-rr-prompt" style="font-size:clamp(1.3rem,2.5vw,2rem)"></div>
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 280px; gap:1.5rem; width:100%; max-width:900px; align-items:start">
+    <div class="host-submissions" id="h-rr-submissions"></div>
+    <div class="side-panel">
+      <div class="side-title">Scores</div>
+      <div id="rr-scores"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Final Results ──────────────────────────────── -->
+<div id="h-final" class="host-screen">
+  <div class="logo" style="font-size:clamp(3rem,7vw,5rem)">Branded!</div>
+  <div style="font-size:3rem">🏆</div>
+  <div class="final-board" id="h-final-board"></div>
+  <div class="host-controls" style="margin-top:1rem">
+    <button class="btn btn-primary" onclick="resetGame()">Play Again</button>
+  </div>
+</div>
+
+<!-- ─── Error toast ───────────────────────────────── -->
+<div id="host-error"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+socket.emit('joinAsHost');
+
+// Show join URL
+document.getElementById('join-url').textContent = window.location.origin;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function showScreen(id) {
+  document.querySelectorAll('.host-screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function updateTimer(elId, t) {
+  const el = document.getElementById(elId);
+  const m = Math.floor(t / 60);
+  const s = t % 60;
+  el.textContent = t >= 60 ? `${m}:${s.toString().padStart(2,'0')}` : t;
+  el.className = 'big-timer' + (t <= 10 ? ' urgent' : t <= 20 ? ' warn' : '');
+}
+
+function formatPrompt(prompt) {
+  if (!prompt) return '';
+  if (prompt.type === 'theme') {
+    return `A <span class="highlight">${prompt.theme}</span>-themed <span class="highlight">${prompt.business}</span>`;
+  }
+  return `A <span class="highlight">${prompt.business}</span> that also sells <span class="highlight">${prompt.product}</span>`;
+}
+
+function renderSideScores(players, elId) {
+  const sorted = [...players].sort((a, b) => b.score - a.score);
+  document.getElementById(elId).innerHTML = sorted.map(p => `
+    <div class="score-side-row">
+      <span>${p.name}</span>
+      <span class="score-side-pts">${p.score.toLocaleString()}</span>
+    </div>
+  `).join('');
+}
+
+function renderPlayerStatus(players, elId, mode) {
+  document.getElementById(elId).innerHTML = players.map(p => {
+    let cls = 'player-chip';
+    let suffix = '';
+    if (mode === 'submit') {
+      if (p.hasSubmitted) { cls += ' submitted'; suffix = ' ✓'; }
+      else if (p.hasPassed) { cls += ''; suffix = ' –'; }
+    }
+    if (mode === 'vote' && p.hasVoted) { cls += ' voted'; suffix = ' ✓'; }
+    return `<div class="${cls}" style="margin-bottom:0.4rem">${p.name}${suffix}</div>`;
+  }).join('');
+}
+
+function showError(msg) {
+  const el = document.getElementById('host-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Controls ─────────────────────────────────────────────────────────────────
+
+function startGame() {
+  const rounds = parseInt(document.getElementById('round-count').value) || 5;
+  socket.emit('startGame', { rounds });
+}
+
+function skipTimer() {
+  socket.emit('skipTimer');
+}
+
+function resetGame() {
+  socket.emit('resetGame');
+}
+
+// ─── State handler ────────────────────────────────────────────────────────────
+
+socket.on('gameState', (state) => {
+  // Lobby
+  if (state.state === 'lobby') {
+    showScreen('h-lobby');
+    const list = document.getElementById('lobby-player-list');
+    if (state.playerCount === 0) {
+      list.innerHTML = '<p class="text-muted">Waiting for players<span class="waiting-dots"></span></p>';
+    } else {
+      list.innerHTML = state.players.map(p =>
+        `<div class="big-player-chip">${p.name}</div>`
+      ).join('');
+    }
+    const btn = document.getElementById('start-btn');
+    btn.disabled = state.playerCount < 2;
+    document.getElementById('start-hint').textContent =
+      state.playerCount < 2 ? 'Need at least 2 players to start' : `${state.playerCount} player${state.playerCount !== 1 ? 's' : ''} ready`;
+    return;
+  }
+
+  // Submitting
+  if (state.state === 'submitting') {
+    showScreen('h-submitting');
+    document.getElementById('h-sub-round').textContent = `Round ${state.round} of ${state.maxRounds}`;
+    document.getElementById('h-sub-prompt').innerHTML = formatPrompt(state.prompt);
+    updateTimer('h-sub-timer', state.timeLeft);
+    document.getElementById('h-sub-count').textContent = state.submittedCount;
+    document.getElementById('h-sub-total').textContent = state.playerCount;
+    const passedNote = state.passedCount > 0 ? ` · ${state.passedCount} passed` : '';
+    document.getElementById('h-sub-progress').innerHTML =
+      `<span>${state.submittedCount}</span> / <span>${state.playerCount}</span> submitted${passedNote}`;
+    renderPlayerStatus(state.players, 'sub-player-list', 'submit');
+    renderSideScores(state.players, 'sub-scores');
+    return;
+  }
+
+  // Voting
+  if (state.state === 'voting') {
+    showScreen('h-voting');
+    document.getElementById('h-vote-round').textContent = `Round ${state.round} of ${state.maxRounds}`;
+    document.getElementById('h-vote-prompt').innerHTML = formatPrompt(state.prompt);
+    updateTimer('h-vote-timer', state.timeLeft);
+    renderPlayerStatus(state.players, 'vote-player-list', 'vote');
+    renderSideScores(state.players, 'vote-scores');
+
+    if (state.submissions) {
+      const maxVotes = Math.max(0, ...state.submissions.map(s => s.votes));
+      document.getElementById('h-vote-submissions').innerHTML = state.submissions.map(s => `
+        <div class="host-sub-card ${s.votes > 0 && s.votes === maxVotes ? 'winner' : ''}">
+          <div class="submission-bar-wrap" style="flex:1">
+            <div class="host-sub-text">${escHtml(s.text)}</div>
+            <div class="host-vote-bar" style="width:${maxVotes > 0 ? Math.round(s.votes/maxVotes*100) : 0}%"></div>
+          </div>
+          <div class="host-sub-votes">${s.votes > 0 ? '▲' + s.votes : '–'}</div>
+        </div>
+      `).join('');
+    }
+    return;
+  }
+
+  // Round results
+  if (state.state === 'roundResults') {
+    showScreen('h-roundresults');
+    document.getElementById('h-rr-round').textContent = `Round ${state.round} results`;
+    document.getElementById('h-rr-prompt').innerHTML = formatPrompt(state.prompt);
+    renderSideScores(state.players, 'rr-scores');
+
+    if (state.submissions) {
+      const maxVotes = Math.max(0, ...state.submissions.map(s => s.votes));
+      document.getElementById('h-rr-submissions').innerHTML = state.submissions.map(s => {
+        const isWinner = maxVotes > 0 && s.votes === maxVotes;
+        return `
+          <div class="host-sub-card ${isWinner ? 'winner' : ''}">
+            <div style="flex:1; text-align:left">
+              <div class="host-sub-text">${escHtml(s.text)}</div>
+              <div class="host-sub-author">${s.playerName}${isWinner ? ' 👑' : ''}</div>
+            </div>
+            <div class="host-sub-votes">${s.votes > 0 ? '▲' + s.votes : '–'}</div>
+          </div>`;
+      }).join('');
+    }
+    return;
+  }
+
+  // Final
+  if (state.state === 'finalResults') {
+    showScreen('h-final');
+    const sorted = [...state.players].sort((a, b) => b.score - a.score);
+    const medals = ['🥇','🥈','🥉'];
+    document.getElementById('h-final-board').innerHTML = sorted.map((p, i) => `
+      <div class="final-row ${i === 0 ? 'winner' : ''}">
+        <span class="final-medal">${medals[i] || (i+1)}</span>
+        <span>${p.name}</span>
+        <span class="final-pts">${p.score.toLocaleString()} pts</span>
+      </div>
+    `).join('');
+    return;
+  }
+});
+
+// Smooth timer updates
+socket.on('timer', (t) => {
+  // Try both timer elements — only the active screen's will be visible
+  updateTimer('h-sub-timer', t);
+  updateTimer('h-vote-timer', t);
+});
+
+socket.on('hostError', showError);
+
+// ─── List editor ──────────────────────────────────────────────────────────────
+
+async function loadListEditor() {
+  try {
+    const res = await fetch('/api/lists');
+    const { businesses, products, themes = [] } = await res.json();
+    document.getElementById('biz-list').value = businesses.join('\n');
+    document.getElementById('prod-list').value = products.join('\n');
+    document.getElementById('theme-list').value = themes.join('\n');
+    document.getElementById('biz-count').textContent = `(${businesses.length})`;
+    document.getElementById('prod-count').textContent = `(${products.length})`;
+    document.getElementById('theme-count').textContent = `(${themes.length})`;
+  } catch {}
+}
+
+async function saveLists() {
+  const parse = id => document.getElementById(id).value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+
+  const businesses = parse('biz-list');
+  const products   = parse('prod-list');
+  const themes     = parse('theme-list');
+
+  document.getElementById('biz-count').textContent   = `(${businesses.length})`;
+  document.getElementById('prod-count').textContent  = `(${products.length})`;
+  document.getElementById('theme-count').textContent = `(${themes.length})`;
+
+  try {
+    await fetch('/api/lists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ businesses, products, themes })
+    });
+    const status = document.getElementById('save-status');
+    status.textContent = '✓ Saved';
+    setTimeout(() => status.textContent = '', 2000);
+  } catch {
+    showError('Failed to save lists');
+  }
+}
+
+loadListEditor();
+</script>
+</body>
+</html>
