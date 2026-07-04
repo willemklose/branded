@@ -3,33 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-  <title>Branded — Join</title>
+  <title>Branded</title>
   <link rel="stylesheet" href="/style.css">
   <style>
-    /* Player-specific overrides */
-    .screen { max-width: 540px; margin: 0 auto; }
-
-    /* Voting cards on mobile: bigger tap targets */
-    .submission-card { min-height: 64px; }
-
-    /* Final podium */
-    .podium-name {
-      font-size: 1.4rem;
-      font-weight: 900;
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
     }
-    .podium-score {
-      font-size: 1.1rem;
-      color: var(--accent);
-      font-weight: 700;
+
+    /* Each screen fills the viewport, scrolls if needed */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      width: 100%;
+      max-width: 540px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      padding: 2rem 1.25rem 4rem;
+      gap: 1.25rem;
+      text-align: center;
+      box-sizing: border-box;
     }
-    .crown { font-size: 2.5rem; }
+
+    .screen.active { display: flex; }
+
+    /* All direct children fill available width */
+    .screen > * { width: 100%; }
+    .screen > .logo,
+    .screen > .round-badge,
+    .screen > p,
+    .screen > .timer { width: auto; }
+
+    /* iOS: prevent zoom on input focus */
+    input[type="text"], textarea {
+      font-size: 16px !important;
+    }
+
+    /* Bigger tap targets on all buttons */
+    .btn { min-height: 52px; }
+
+    /* Vote cards */
+    .submission-card { min-height: 68px; }
   </style>
 </head>
 <body>
 
 <!-- ─── Name Entry ─────────────────────────────────── -->
 <div id="screen-join" class="screen active">
-  <div class="logo">Branded</div>
+  <div class="logo" style="margin-top:2rem">Branded</div>
   <p class="subtitle">The pun brand name game</p>
   <div class="card flex-col" style="gap:1rem">
     <input type="text" id="name-input" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false">
@@ -40,7 +63,7 @@
 
 <!-- ─── Lobby ──────────────────────────────────────── -->
 <div id="screen-lobby" class="screen">
-  <div class="logo">Branded</div>
+  <div class="logo" style="margin-top:2rem">Branded</div>
   <div class="card flex-col">
     <p class="text-muted" style="font-size:0.9rem">Waiting for host to start<span class="waiting-dots"></span></p>
     <div class="divider"></div>
@@ -57,22 +80,24 @@
     <div class="prompt-label">Brand this business</div>
     <div class="prompt-text" id="sub-prompt-text"></div>
   </div>
-  <div class="timer" id="sub-timer">90</div>
-  <div class="card flex-col" style="gap:0.5rem; max-width:520px" id="answer-card">
+  <div class="timer" id="sub-timer">3:00</div>
+
+  <div class="card flex-col" style="gap:0.5rem" id="answer-card">
     <textarea id="answer-input" rows="3" maxlength="100"
       placeholder="Name, slogan, tagline — whatever pun comes to mind…"></textarea>
     <div class="char-count" id="char-count">0 / 100</div>
-    <div class="flex-row" style="gap:0.5rem">
-      <button class="btn btn-ghost" id="pass-btn" onclick="passRound()" style="flex:0 0 auto">Pass</button>
-      <button class="btn btn-accent btn-full" id="submit-btn" onclick="submitAnswer()">Submit</button>
+    <div style="display:flex; gap:0.5rem">
+      <button class="btn btn-ghost" id="pass-btn" onclick="passRound()" style="flex:0 0 auto; padding:0 1.25rem">Pass</button>
+      <button class="btn btn-accent" id="submit-btn" onclick="submitAnswer()" style="flex:1">Submit</button>
     </div>
   </div>
-  <div id="submitted-confirm" style="display:none; color:var(--green); font-weight:700">
+
+  <p id="submitted-confirm" style="display:none; color:var(--green); font-weight:700">
     ✓ Submitted! Waiting for others<span class="waiting-dots"></span>
-  </div>
-  <div id="passed-confirm" style="display:none; color:var(--muted); font-weight:700">
+  </p>
+  <p id="passed-confirm" style="display:none; color:var(--muted); font-weight:700">
     Passed. Waiting for others<span class="waiting-dots"></span>
-  </div>
+  </p>
 </div>
 
 <!-- ─── Presenting ────────────────────────────────── -->
@@ -82,21 +107,21 @@
     <div class="prompt-label">The prompt was</div>
     <div class="prompt-text" id="pres-prompt-text"></div>
   </div>
-  <p style="color:var(--muted); font-weight:600; font-size:1.1rem">
+  <p style="color:var(--muted); font-weight:600; font-size:1.1rem; width:auto">
     Host is reading the answers<span class="waiting-dots"></span>
   </p>
-  <p class="text-muted" style="font-size:0.85rem">Get ready to vote!</p>
+  <p class="text-muted" style="font-size:0.85rem; width:auto">Get ready to vote!</p>
 </div>
 
 <!-- ─── Voting ─────────────────────────────────────── -->
 <div id="screen-voting" class="screen">
   <div class="round-badge" id="vote-round-badge">Round 1 of 5</div>
-  <div class="prompt-box" style="max-width:520px">
+  <div class="prompt-box">
     <div class="prompt-label">Vote for your favorite</div>
     <div class="prompt-text" id="vote-prompt-text"></div>
   </div>
-  <div class="submissions-grid" id="vote-submissions"></div>
-  <p id="voted-msg" style="display:none; color:var(--accent); font-weight:700">
+  <div id="vote-submissions" style="display:flex; flex-direction:column; gap:0.75rem; width:100%"></div>
+  <p id="voted-msg" style="display:none; color:var(--accent); font-weight:700; width:auto">
     ✓ Voted! Waiting for results<span class="waiting-dots"></span>
   </p>
 </div>
@@ -104,12 +129,12 @@
 <!-- ─── Round Results ──────────────────────────────── -->
 <div id="screen-roundresults" class="screen">
   <div class="round-badge" id="rr-round-badge">Round 1 results</div>
-  <div class="prompt-box" style="max-width:520px">
+  <div class="prompt-box">
     <div class="prompt-label">The prompt was</div>
     <div class="prompt-text" id="rr-prompt-text"></div>
   </div>
-  <div class="submissions-grid" id="rr-submissions"></div>
-  <div style="margin-top:0.5rem">
+  <div id="rr-submissions" style="display:flex; flex-direction:column; gap:0.75rem; width:100%"></div>
+  <div style="width:100%">
     <p class="text-muted" style="font-size:0.85rem; margin-bottom:0.75rem">Scores</p>
     <div class="leaderboard" id="rr-leaderboard"></div>
   </div>
@@ -117,10 +142,10 @@
 
 <!-- ─── Final Results ──────────────────────────────── -->
 <div id="screen-final" class="screen">
-  <div class="logo" style="margin-bottom:0.25rem">Branded!</div>
-  <div class="crown">🏆</div>
+  <div class="logo" style="margin-top:2rem">Branded!</div>
+  <div style="font-size:3rem; width:auto">🏆</div>
   <div class="leaderboard" id="final-leaderboard"></div>
-  <p class="text-muted" style="font-size:0.85rem; margin-top:0.5rem">Thanks for playing!</p>
+  <p class="text-muted" style="font-size:0.85rem; width:auto; margin-top:0.5rem">Thanks for playing!</p>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -128,8 +153,6 @@
 const socket = io();
 let myName = '';
 let currentState = null;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -151,15 +174,6 @@ function formatPrompt(prompt) {
   return `A <span class="highlight">${prompt.business}</span> that also sells <span class="highlight">${prompt.product}</span>`;
 }
 
-function renderPlayers(players, mode = '') {
-  return players.map(p => {
-    let cls = 'player-chip';
-    if (mode === 'submit' && p.hasSubmitted) cls += ' submitted';
-    if (mode === 'vote' && p.hasVoted) cls += ' voted';
-    return `<div class="${cls}">${p.name}</div>`;
-  }).join('');
-}
-
 function renderLeaderboard(players) {
   const sorted = [...players].sort((a, b) => b.score - a.score);
   const medals = ['🥇','🥈','🥉'];
@@ -168,8 +182,11 @@ function renderLeaderboard(players) {
       <span class="score-rank">${medals[i] || (i+1)}</span>
       <span class="score-name">${p.name}</span>
       <span class="score-pts">${p.score.toLocaleString()} pts</span>
-    </div>
-  `).join('');
+    </div>`).join('');
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ─── Join ─────────────────────────────────────────────────────────────────────
@@ -197,12 +214,12 @@ socket.on('joinError', msg => {
 // ─── Answer input ─────────────────────────────────────────────────────────────
 
 const answerInput = document.getElementById('answer-input');
-const charCount = document.getElementById('char-count');
+const charCountEl = document.getElementById('char-count');
 
 answerInput.addEventListener('input', () => {
   const len = answerInput.value.length;
-  charCount.textContent = `${len} / 100`;
-  charCount.className = 'char-count' + (len >= 90 ? ' warn' : '');
+  charCountEl.textContent = `${len} / 100`;
+  charCountEl.className = 'char-count' + (len >= 90 ? ' warn' : '');
 });
 
 answerInput.addEventListener('keydown', e => {
@@ -222,8 +239,6 @@ function passRound() {
   socket.emit('passRound');
 }
 
-// ─── Vote ─────────────────────────────────────────────────────────────────────
-
 function vote(targetId) {
   socket.emit('vote', { targetId });
 }
@@ -233,14 +248,13 @@ function vote(targetId) {
 socket.on('playerState', (state) => {
   currentState = state;
 
-  // Lobby
   if (state.state === 'lobby') {
     show('screen-lobby');
-    document.getElementById('lobby-players').innerHTML = renderPlayers(state.allPlayers);
+    const players = state.allPlayers.map(p => `<div class="player-chip">${p.name}</div>`).join('');
+    document.getElementById('lobby-players').innerHTML = players;
     return;
   }
 
-  // Submitting
   if (state.state === 'submitting') {
     show('screen-submitting');
     document.getElementById('sub-round-badge').textContent = `Round ${state.round} of ${state.maxRounds}`;
@@ -253,14 +267,12 @@ socket.on('playerState', (state) => {
     document.getElementById('passed-confirm').style.display = state.hasPassed ? 'block' : 'none';
 
     if (!done) {
-      document.getElementById('answer-input').value = '';
-      charCount.textContent = '0 / 100';
-      setTimeout(() => answerInput.focus(), 100);
+      answerInput.value = '';
+      charCountEl.textContent = '0 / 100';
     }
     return;
   }
 
-  // Presenting
   if (state.state === 'presenting') {
     show('screen-presenting');
     document.getElementById('pres-round-badge').textContent = `Round ${state.round} of ${state.maxRounds}`;
@@ -268,40 +280,27 @@ socket.on('playerState', (state) => {
     return;
   }
 
-  // Voting
   if (state.state === 'voting') {
     show('screen-voting');
     document.getElementById('vote-round-badge').textContent = `Round ${state.round} of ${state.maxRounds}`;
     document.getElementById('vote-prompt-text').innerHTML = formatPrompt(state.prompt);
-
-    const container = document.getElementById('vote-submissions');
-    const locked = state.hasVoted;
-
-    if (locked) {
-      document.getElementById('voted-msg').style.display = 'block';
-    } else {
-      document.getElementById('voted-msg').style.display = 'none';
-    }
+    document.getElementById('voted-msg').style.display = state.hasVoted ? 'block' : 'none';
 
     if (state.submissions) {
-      // Shuffle so own answer isn't always first
+      const locked = state.hasVoted;
       const subs = [...state.submissions].sort(() => Math.random() - 0.5);
-      container.innerHTML = subs.map(s => {
+      document.getElementById('vote-submissions').innerHTML = subs.map(s => {
         let cls = 'submission-card';
         if (s.isOwn) cls += ' own';
         if (s.votedFor) cls += ' voted-for';
         if (locked) cls += ' locked';
         const onclick = (!s.isOwn && !locked) ? `onclick="vote('${s.id}')"` : '';
-        return `
-          <div class="${cls}" ${onclick}>
-            <span class="submission-text">${escHtml(s.text)}</span>
-          </div>`;
+        return `<div class="${cls}" ${onclick}><span class="submission-text">${escHtml(s.text)}</span></div>`;
       }).join('');
     }
     return;
   }
 
-  // Round results
   if (state.state === 'roundResults') {
     show('screen-roundresults');
     document.getElementById('rr-round-badge').textContent = `Round ${state.round} results`;
@@ -312,19 +311,16 @@ socket.on('playerState', (state) => {
       const maxVotes = sorted[0]?.votes ?? 0;
       document.getElementById('rr-submissions').innerHTML = sorted.map(s => {
         const isWinner = maxVotes > 0 && s.votes === maxVotes;
-        return `
-          <div class="submission-card locked ${isWinner ? 'voted-for' : ''}">
-            <span class="submission-text">${escHtml(s.text)}</span>
-            <span class="vote-count">${s.votes > 0 ? '▲' + s.votes : '–'}</span>
-          </div>`;
+        return `<div class="submission-card locked ${isWinner ? 'voted-for' : ''}">
+          <span class="submission-text">${escHtml(s.text)}</span>
+          <span class="vote-count">${s.votes > 0 ? '▲' + s.votes : '–'}</span>
+        </div>`;
       }).join('');
     }
-
     document.getElementById('rr-leaderboard').innerHTML = renderLeaderboard(state.allPlayers);
     return;
   }
 
-  // Final results
   if (state.state === 'finalResults') {
     show('screen-final');
     document.getElementById('final-leaderboard').innerHTML = renderLeaderboard(state.allPlayers);
@@ -332,15 +328,9 @@ socket.on('playerState', (state) => {
   }
 });
 
-// Timer updates arrive separately for smooth countdown
 socket.on('timer', (t) => {
-  if (!currentState) return;
-  if (currentState.state === 'submitting') updateTimer(document.getElementById('sub-timer'), t);
+  if (currentState?.state === 'submitting') updateTimer(document.getElementById('sub-timer'), t);
 });
-
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
 </script>
 </body>
 </html>
