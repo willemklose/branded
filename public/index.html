@@ -6,45 +6,50 @@
   <title>Branded</title>
   <link rel="stylesheet" href="/style.css">
   <style>
-    html, body {
-      overflow-x: hidden;
-      width: 100%;
+    /* ── Screen container ───────────────────────────────────────────────────── */
+    /* Override ALL style.css .screen rules — active screens fill viewport      */
+
+    .screen {
+      display: none !important;
     }
 
-    /* Each screen fills the viewport, scrolls if needed */
-    .screen {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      width: 100%;
-      max-width: 540px;
+    .screen.active {
+      display: block !important;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      background: var(--bg);
+    }
+
+    /* Inner wrapper: centers content, adds padding, can grow taller than viewport */
+    .inner {
+      max-width: 520px;
       margin: 0 auto;
-      min-height: 100dvh;
-      padding: 2rem 1.25rem 4rem;
+      padding: 2rem 1.25rem env(safe-area-inset-bottom, 3rem);
+      padding-bottom: max(3rem, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
       gap: 1.25rem;
       text-align: center;
+      min-height: 100%;
       box-sizing: border-box;
     }
 
-    .screen.active { display: flex; }
+    /* Centre-align small/inline items */
+    .inner > .logo,
+    .inner > .round-badge,
+    .inner > .timer,
+    .inner > p,
+    .inner > .subtitle { align-self: center; }
 
-    /* All direct children fill available width */
-    .screen > * { width: 100%; }
-    .screen > .logo,
-    .screen > .round-badge,
-    .screen > p,
-    .screen > .timer { width: auto; }
+    /* ── iOS: stop auto-zoom on input focus ─────────────────────────────────── */
+    input[type="text"], textarea { font-size: 16px !important; }
 
-    /* iOS: prevent zoom on input focus */
-    input[type="text"], textarea {
-      font-size: 16px !important;
-    }
-
-    /* Bigger tap targets on all buttons */
+    /* ── Tap targets ─────────────────────────────────────────────────────────── */
     .btn { min-height: 52px; }
-
-    /* Vote cards */
     .submission-card { min-height: 68px; }
   </style>
 </head>
@@ -52,100 +57,114 @@
 
 <!-- ─── Name Entry ─────────────────────────────────── -->
 <div id="screen-join" class="screen active">
-  <div class="logo" style="margin-top:2rem">Branded</div>
-  <p class="subtitle">The pun brand name game</p>
-  <div class="card flex-col" style="gap:1rem">
-    <input type="text" id="name-input" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false">
-    <div class="error-msg" id="join-error"></div>
-    <button class="btn btn-primary btn-full" onclick="joinGame()">Join Game</button>
+  <div class="inner" style="justify-content:center; min-height:100dvh">
+    <div class="logo">Branded</div>
+    <p class="subtitle">The pun brand name game</p>
+    <div class="card flex-col" style="gap:1rem">
+      <input type="text" id="name-input" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false">
+      <div class="error-msg" id="join-error"></div>
+      <button class="btn btn-primary btn-full" onclick="joinGame()">Join Game</button>
+    </div>
   </div>
 </div>
 
 <!-- ─── Lobby ──────────────────────────────────────── -->
 <div id="screen-lobby" class="screen">
-  <div class="logo" style="margin-top:2rem">Branded</div>
-  <div class="card flex-col">
-    <p class="text-muted" style="font-size:0.9rem">Waiting for host to start<span class="waiting-dots"></span></p>
-    <div class="divider"></div>
-    <p style="font-size:0.85rem; color:var(--muted)">Players joined</p>
-    <div class="player-list" id="lobby-players"></div>
+  <div class="inner" style="justify-content:center; min-height:100dvh">
+    <div class="logo">Branded</div>
+    <div class="card flex-col">
+      <p class="text-muted" style="font-size:0.9rem">Waiting for host to start<span class="waiting-dots"></span></p>
+      <div class="divider"></div>
+      <p style="font-size:0.85rem; color:var(--muted)">Players joined</p>
+      <div class="player-list" id="lobby-players"></div>
+    </div>
+    <p class="subtitle" style="font-size:0.8rem">Share <strong style="color:var(--primary-glow)">this page's URL</strong> so friends can join</p>
   </div>
-  <p class="subtitle" style="font-size:0.8rem">Share <strong style="color:var(--primary-glow)">this page's URL</strong> so friends can join</p>
 </div>
 
 <!-- ─── Submitting ─────────────────────────────────── -->
 <div id="screen-submitting" class="screen">
-  <div class="round-badge" id="sub-round-badge">Round 1 of 5</div>
-  <div class="prompt-box">
-    <div class="prompt-label">Brand this business</div>
-    <div class="prompt-text" id="sub-prompt-text"></div>
-  </div>
-  <div class="timer" id="sub-timer">3:00</div>
-
-  <div class="card flex-col" style="gap:0.5rem" id="answer-card">
-    <textarea id="answer-input" rows="3" maxlength="100"
-      placeholder="Name, slogan, tagline — whatever pun comes to mind…"></textarea>
-    <div class="char-count" id="char-count">0 / 100</div>
-    <div style="display:flex; gap:0.5rem">
-      <button class="btn btn-ghost" id="pass-btn" onclick="passRound()" style="flex:0 0 auto; padding:0 1.25rem">Pass</button>
-      <button class="btn btn-accent" id="submit-btn" onclick="submitAnswer()" style="flex:1">Submit</button>
+  <div class="inner">
+    <div class="round-badge" id="sub-round-badge">Round 1 of 5</div>
+    <div class="prompt-box">
+      <div class="prompt-label">Brand this business</div>
+      <div class="prompt-text" id="sub-prompt-text"></div>
     </div>
-  </div>
+    <div class="timer" id="sub-timer">3:00</div>
 
-  <p id="submitted-confirm" style="display:none; color:var(--green); font-weight:700">
-    ✓ Submitted! Waiting for others<span class="waiting-dots"></span>
-  </p>
-  <p id="passed-confirm" style="display:none; color:var(--muted); font-weight:700">
-    Passed. Waiting for others<span class="waiting-dots"></span>
-  </p>
+    <div class="card flex-col" style="gap:0.5rem" id="answer-card">
+      <textarea id="answer-input" rows="3" maxlength="100"
+        placeholder="Name, slogan, tagline — whatever pun comes to mind…"></textarea>
+      <div class="char-count" id="char-count">0 / 100</div>
+      <div style="display:flex; gap:0.5rem">
+        <button class="btn btn-ghost" onclick="passRound()" style="flex:0 0 auto; padding:0 1.25rem">Pass</button>
+        <button class="btn btn-accent" onclick="submitAnswer()" style="flex:1">Submit</button>
+      </div>
+    </div>
+
+    <p id="submitted-confirm" style="display:none; color:var(--green); font-weight:700; align-self:center">
+      ✓ Submitted! Waiting for others<span class="waiting-dots"></span>
+    </p>
+    <p id="passed-confirm" style="display:none; color:var(--muted); font-weight:700; align-self:center">
+      Passed. Waiting for others<span class="waiting-dots"></span>
+    </p>
+  </div>
 </div>
 
 <!-- ─── Presenting ────────────────────────────────── -->
 <div id="screen-presenting" class="screen">
-  <div class="round-badge" id="pres-round-badge">Round 1 of 5</div>
-  <div class="prompt-box">
-    <div class="prompt-label">The prompt was</div>
-    <div class="prompt-text" id="pres-prompt-text"></div>
+  <div class="inner" style="justify-content:center; min-height:100dvh">
+    <div class="round-badge" id="pres-round-badge">Round 1 of 5</div>
+    <div class="prompt-box">
+      <div class="prompt-label">The prompt was</div>
+      <div class="prompt-text" id="pres-prompt-text"></div>
+    </div>
+    <p style="color:var(--muted); font-weight:600; font-size:1.1rem; align-self:center">
+      Host is reading the answers<span class="waiting-dots"></span>
+    </p>
+    <p class="text-muted" style="font-size:0.85rem; align-self:center">Get ready to vote!</p>
   </div>
-  <p style="color:var(--muted); font-weight:600; font-size:1.1rem; width:auto">
-    Host is reading the answers<span class="waiting-dots"></span>
-  </p>
-  <p class="text-muted" style="font-size:0.85rem; width:auto">Get ready to vote!</p>
 </div>
 
 <!-- ─── Voting ─────────────────────────────────────── -->
 <div id="screen-voting" class="screen">
-  <div class="round-badge" id="vote-round-badge">Round 1 of 5</div>
-  <div class="prompt-box">
-    <div class="prompt-label">Vote for your favorite</div>
-    <div class="prompt-text" id="vote-prompt-text"></div>
+  <div class="inner">
+    <div class="round-badge" id="vote-round-badge">Round 1 of 5</div>
+    <div class="prompt-box">
+      <div class="prompt-label">Vote for your favorite</div>
+      <div class="prompt-text" id="vote-prompt-text"></div>
+    </div>
+    <div id="vote-submissions" style="display:flex; flex-direction:column; gap:0.75rem"></div>
+    <p id="voted-msg" style="display:none; color:var(--accent); font-weight:700; align-self:center">
+      ✓ Voted! Waiting for results<span class="waiting-dots"></span>
+    </p>
   </div>
-  <div id="vote-submissions" style="display:flex; flex-direction:column; gap:0.75rem; width:100%"></div>
-  <p id="voted-msg" style="display:none; color:var(--accent); font-weight:700; width:auto">
-    ✓ Voted! Waiting for results<span class="waiting-dots"></span>
-  </p>
 </div>
 
 <!-- ─── Round Results ──────────────────────────────── -->
 <div id="screen-roundresults" class="screen">
-  <div class="round-badge" id="rr-round-badge">Round 1 results</div>
-  <div class="prompt-box">
-    <div class="prompt-label">The prompt was</div>
-    <div class="prompt-text" id="rr-prompt-text"></div>
-  </div>
-  <div id="rr-submissions" style="display:flex; flex-direction:column; gap:0.75rem; width:100%"></div>
-  <div style="width:100%">
-    <p class="text-muted" style="font-size:0.85rem; margin-bottom:0.75rem">Scores</p>
-    <div class="leaderboard" id="rr-leaderboard"></div>
+  <div class="inner">
+    <div class="round-badge" id="rr-round-badge">Round 1 results</div>
+    <div class="prompt-box">
+      <div class="prompt-label">The prompt was</div>
+      <div class="prompt-text" id="rr-prompt-text"></div>
+    </div>
+    <div id="rr-submissions" style="display:flex; flex-direction:column; gap:0.75rem"></div>
+    <div>
+      <p class="text-muted" style="font-size:0.85rem; margin-bottom:0.75rem">Scores</p>
+      <div class="leaderboard" id="rr-leaderboard"></div>
+    </div>
   </div>
 </div>
 
 <!-- ─── Final Results ──────────────────────────────── -->
 <div id="screen-final" class="screen">
-  <div class="logo" style="margin-top:2rem">Branded!</div>
-  <div style="font-size:3rem; width:auto">🏆</div>
-  <div class="leaderboard" id="final-leaderboard"></div>
-  <p class="text-muted" style="font-size:0.85rem; width:auto; margin-top:0.5rem">Thanks for playing!</p>
+  <div class="inner" style="justify-content:center; min-height:100dvh">
+    <div class="logo">Branded!</div>
+    <div style="font-size:3rem; align-self:center">🏆</div>
+    <div class="leaderboard" id="final-leaderboard"></div>
+    <p class="text-muted" style="font-size:0.85rem; align-self:center">Thanks for playing!</p>
+  </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -156,7 +175,9 @@ let currentState = null;
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  el.scrollTop = 0;
 }
 
 function updateTimer(el, t) {
@@ -223,10 +244,7 @@ answerInput.addEventListener('input', () => {
 });
 
 answerInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    submitAnswer();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitAnswer(); }
 });
 
 function submitAnswer() {
@@ -235,13 +253,8 @@ function submitAnswer() {
   socket.emit('submitAnswer', { text });
 }
 
-function passRound() {
-  socket.emit('passRound');
-}
-
-function vote(targetId) {
-  socket.emit('vote', { targetId });
-}
+function passRound() { socket.emit('passRound'); }
+function vote(targetId) { socket.emit('vote', { targetId }); }
 
 // ─── State handler ────────────────────────────────────────────────────────────
 
@@ -250,8 +263,8 @@ socket.on('playerState', (state) => {
 
   if (state.state === 'lobby') {
     show('screen-lobby');
-    const players = state.allPlayers.map(p => `<div class="player-chip">${p.name}</div>`).join('');
-    document.getElementById('lobby-players').innerHTML = players;
+    document.getElementById('lobby-players').innerHTML =
+      state.allPlayers.map(p => `<div class="player-chip">${p.name}</div>`).join('');
     return;
   }
 
@@ -260,16 +273,11 @@ socket.on('playerState', (state) => {
     document.getElementById('sub-round-badge').textContent = `Round ${state.round} of ${state.maxRounds}`;
     document.getElementById('sub-prompt-text').innerHTML = formatPrompt(state.prompt);
     updateTimer(document.getElementById('sub-timer'), state.timeLeft);
-
     const done = state.hasSubmitted || state.hasPassed;
     document.getElementById('answer-card').style.display = done ? 'none' : '';
     document.getElementById('submitted-confirm').style.display = (state.hasSubmitted && !state.hasPassed) ? 'block' : 'none';
     document.getElementById('passed-confirm').style.display = state.hasPassed ? 'block' : 'none';
-
-    if (!done) {
-      answerInput.value = '';
-      charCountEl.textContent = '0 / 100';
-    }
+    if (!done) { answerInput.value = ''; charCountEl.textContent = '0 / 100'; }
     return;
   }
 
@@ -285,7 +293,6 @@ socket.on('playerState', (state) => {
     document.getElementById('vote-round-badge').textContent = `Round ${state.round} of ${state.maxRounds}`;
     document.getElementById('vote-prompt-text').innerHTML = formatPrompt(state.prompt);
     document.getElementById('voted-msg').style.display = state.hasVoted ? 'block' : 'none';
-
     if (state.submissions) {
       const locked = state.hasVoted;
       const subs = [...state.submissions].sort(() => Math.random() - 0.5);
@@ -305,7 +312,6 @@ socket.on('playerState', (state) => {
     show('screen-roundresults');
     document.getElementById('rr-round-badge').textContent = `Round ${state.round} results`;
     document.getElementById('rr-prompt-text').innerHTML = formatPrompt(state.prompt);
-
     if (state.submissions) {
       const sorted = [...state.submissions].sort((a, b) => b.votes - a.votes);
       const maxVotes = sorted[0]?.votes ?? 0;
