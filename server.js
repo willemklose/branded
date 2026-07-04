@@ -91,9 +91,9 @@ function pickPrompt() {
 
   if (activeLang === 'de') {
     if (useTheme) {
-      return { type: 'theme', business: b, theme: second, text: `Ein ${second}es ${b}` };
+      return { type: 'theme', business: b, theme: second, text: `${second}-${b}`, lang: 'de' };
     }
-    return { type: 'product', business: b, product: second, text: `Ein ${b}, der auch ${second} verkauft` };
+    return { type: 'product', business: b, product: second, text: `Ein ${b}, der auch ${second} verkauft`, lang: 'de' };
   }
   if (useTheme) {
     return { type: 'theme', business: b, theme: second, text: `A ${second}-themed ${b}` };

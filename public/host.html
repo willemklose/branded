@@ -520,7 +520,13 @@ function updateTimer(elId, t) {
 function formatPrompt(prompt) {
   if (!prompt) return '';
   if (prompt.type === 'theme') {
+    if (prompt.lang === 'de') {
+      return `<span class="highlight">${prompt.theme}</span>-<span class="highlight">${prompt.business}</span>`;
+    }
     return `A <span class="highlight">${prompt.theme}</span>-themed <span class="highlight">${prompt.business}</span>`;
+  }
+  if (prompt.lang === 'de') {
+    return `Ein <span class="highlight">${prompt.business}</span>, der auch <span class="highlight">${prompt.product}</span> verkauft`;
   }
   return `A <span class="highlight">${prompt.business}</span> that also sells <span class="highlight">${prompt.product}</span>`;
 }

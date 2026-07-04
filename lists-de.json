@@ -1,13 +1,13 @@
 {
   "themes": [
-    "Weltraum", "mittelalterlich", "Piraten", "Cowboy", "Unterwasser", "Dschungel",
-    "Cyberpunk", "Steampunk", "postapokalyptisch", "Disco", "80er-Jahre",
-    "Anime", "Pokémon", "Harry Potter", "Star Wars", "Vaporwave",
-    "Cottagecore", "Dark Academia", "Gothic", "Rave", "Ritterturnier",
+    "Weltraum", "Mittelalter", "Piraten", "Cowboy", "Unterwasser", "Dschungel",
+    "Cyberpunk", "Steampunk", "Postapokalypse", "Disco", "80er",
+    "Anime", "Pokémon", "Harry-Potter", "Star-Wars", "Vaporwave",
+    "Cottagecore", "Dark-Academia", "Gothic", "Rave", "Ritterturnier",
     "Noir", "Märchen", "Gameshow", "Reality-TV", "Wikinger",
-    "altägyptisch", "Samurai", "Zirkus", "Wilder Westen",
-    "Minecraft", "My Little Pony", "Barbie", "Weihnachten",
-    "Halloween", "Valentinstag", "Oktoberfest", "DDR-Nostalgie"
+    "Altägypten", "Samurai", "Zirkus", "Wilder-Westen",
+    "Minecraft", "My-Little-Pony", "Barbie", "Weihnachts",
+    "Halloween", "Valentinstag", "Oktoberfest", "DDR"
   ],
   "businesses": [
     "Friseursalon", "Bäckerei", "Fitnessstudio", "Apotheke", "Buchhandlung", "Tierhandlung",
