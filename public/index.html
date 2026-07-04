@@ -75,6 +75,19 @@
   </div>
 </div>
 
+<!-- ─── Presenting ────────────────────────────────── -->
+<div id="screen-presenting" class="screen">
+  <div class="round-badge" id="pres-round-badge">Round 1 of 5</div>
+  <div class="prompt-box">
+    <div class="prompt-label">The prompt was</div>
+    <div class="prompt-text" id="pres-prompt-text"></div>
+  </div>
+  <p style="color:var(--muted); font-weight:600; font-size:1.1rem">
+    Host is reading the answers<span class="waiting-dots"></span>
+  </p>
+  <p class="text-muted" style="font-size:0.85rem">Get ready to vote!</p>
+</div>
+
 <!-- ─── Voting ─────────────────────────────────────── -->
 <div id="screen-voting" class="screen">
   <div class="round-badge" id="vote-round-badge">Round 1 of 5</div>
@@ -82,7 +95,6 @@
     <div class="prompt-label">Vote for your favorite</div>
     <div class="prompt-text" id="vote-prompt-text"></div>
   </div>
-  <div class="timer" id="vote-timer">30</div>
   <div class="submissions-grid" id="vote-submissions"></div>
   <p id="voted-msg" style="display:none; color:var(--accent); font-weight:700">
     ✓ Voted! Waiting for results<span class="waiting-dots"></span>
@@ -248,6 +260,14 @@ socket.on('playerState', (state) => {
     return;
   }
 
+  // Presenting
+  if (state.state === 'presenting') {
+    show('screen-presenting');
+    document.getElementById('pres-round-badge').textContent = `Round ${state.round} of ${state.maxRounds}`;
+    document.getElementById('pres-prompt-text').innerHTML = formatPrompt(state.prompt);
+    return;
+  }
+
   // Voting
   if (state.state === 'voting') {
     show('screen-voting');
@@ -317,7 +337,6 @@ socket.on('playerState', (state) => {
 socket.on('timer', (t) => {
   if (!currentState) return;
   if (currentState.state === 'submitting') updateTimer(document.getElementById('sub-timer'), t);
-  if (currentState.state === 'voting')    updateTimer(document.getElementById('vote-timer'), t);
 });
 
 function escHtml(str) {

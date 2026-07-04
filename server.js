@@ -100,10 +100,12 @@ function hostState() {
     hasSubmitted: p.hasSubmitted, hasVoted: p.hasVoted, hasPassed: p.hasPassed
   }));
 
-  const submissions = (game.state === 'voting' || game.state === 'roundResults')
+  const showSubs = ['presenting', 'voting', 'roundResults'].includes(game.state);
+  const showNames = ['presenting', 'roundResults'].includes(game.state);
+  const submissions = showSubs
     ? Object.entries(game.submissions).map(([id, s]) => ({
         id,
-        playerName: game.players[id]?.name ?? '???',
+        playerName: showNames ? (game.players[id]?.name ?? '???') : null,
         text: s.text,
         votes: s.votes.length
       })).sort((a, b) => b.votes - a.votes)
@@ -124,7 +126,7 @@ function playerState(socketId) {
   const p = game.players[socketId];
   if (!p) return null;
 
-  const submissions = (game.state === 'voting' || game.state === 'roundResults')
+  const submissions = ['voting', 'roundResults'].includes(game.state)
     ? Object.entries(game.submissions).map(([id, s]) => ({
         id, text: s.text,
         votes: s.votes.length,
@@ -165,17 +167,23 @@ function startRound() {
   });
   game.state = 'submitting';
   broadcast();
-  startTimer(180, startVoting);  // 3 minutes
+  startTimer(180, startPresenting);  // 3 minutes
 }
 
-function startVoting() {
+function startPresenting() {
   if (Object.keys(game.submissions).length === 0) {
     endRound();
     return;
   }
+  game.state = 'presenting';
+  broadcast();
+  // No timer — host manually starts voting
+}
+
+function startVoting() {
   game.state = 'voting';
   broadcast();
-  startTimer(30, endRound);
+  // No timer — ends when all players have voted or host skips
 }
 
 function endRound() {
@@ -208,7 +216,7 @@ function checkAllSubmitted() {
   const done = Object.values(game.players).filter(p => p.hasSubmitted || p.hasPassed).length;
   if (done >= total && total > 0) {
     clearInterval(game.timer);
-    startVoting();
+    startPresenting();
   }
 }
 
@@ -277,8 +285,13 @@ io.on('connection', socket => {
     checkAllVoted();
   });
 
+  socket.on('beginVoting', () => {
+    if (game.state !== 'presenting') return;
+    startVoting();
+  });
+
   socket.on('skipTimer', () => {
-    if (game.state === 'submitting') { clearInterval(game.timer); startVoting(); }
+    if (game.state === 'submitting') { clearInterval(game.timer); startPresenting(); }
     else if (game.state === 'voting') { clearInterval(game.timer); endRound(); }
   });
 

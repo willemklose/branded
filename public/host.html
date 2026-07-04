@@ -315,6 +315,20 @@
   </div>
 </div>
 
+<!-- ─── Presenting ────────────────────────────────── -->
+<div id="h-presenting" class="host-screen">
+  <div class="round-badge" id="h-pres-round"></div>
+  <div class="prompt-box" style="max-width:720px">
+    <div class="prompt-label">The prompt was</div>
+    <div class="prompt-text" id="h-pres-prompt" style="font-size:clamp(1.3rem,2.5vw,2rem)"></div>
+  </div>
+  <p style="color:var(--muted); font-size:1rem">Read these out loud, then start the vote</p>
+  <div class="host-submissions" id="h-pres-submissions" style="max-width:700px; width:100%"></div>
+  <button class="btn btn-accent" style="margin-top:0.5rem; font-size:1.1rem; padding:1rem 2.5rem" onclick="beginVoting()">
+    Start Voting →
+  </button>
+</div>
+
 <!-- ─── Voting ─────────────────────────────────────── -->
 <div id="h-voting" class="host-screen">
   <div class="game-layout">
@@ -331,10 +345,9 @@
         <div class="prompt-label">Vote for your favorite</div>
         <div class="prompt-text" id="h-vote-prompt" style="font-size:clamp(1.2rem,2.5vw,1.8rem)"></div>
       </div>
-      <div class="big-timer" id="h-vote-timer">30</div>
       <div class="host-submissions" id="h-vote-submissions"></div>
       <div class="host-controls">
-        <button class="btn btn-ghost" onclick="skipTimer()">Skip timer →</button>
+        <button class="btn btn-ghost" onclick="skipTimer()">End voting →</button>
       </div>
     </div>
 
@@ -451,6 +464,10 @@ function skipTimer() {
   socket.emit('skipTimer');
 }
 
+function beginVoting() {
+  socket.emit('beginVoting');
+}
+
 function resetGame() {
   socket.emit('resetGame');
 }
@@ -489,6 +506,24 @@ socket.on('gameState', (state) => {
       `<span>${state.submittedCount}</span> / <span>${state.playerCount}</span> submitted${passedNote}`;
     renderPlayerStatus(state.players, 'sub-player-list', 'submit');
     renderSideScores(state.players, 'sub-scores');
+    return;
+  }
+
+  // Presenting
+  if (state.state === 'presenting') {
+    showScreen('h-presenting');
+    document.getElementById('h-pres-round').textContent = `Round ${state.round} of ${state.maxRounds}`;
+    document.getElementById('h-pres-prompt').innerHTML = formatPrompt(state.prompt);
+
+    if (state.submissions) {
+      document.getElementById('h-pres-submissions').innerHTML = state.submissions.map(s => `
+        <div class="host-sub-card">
+          <div style="flex:1; text-align:left">
+            <div class="host-sub-text">${escHtml(s.text)}</div>
+            <div class="host-sub-author">${s.playerName ?? ''}</div>
+          </div>
+        </div>`).join('');
+    }
     return;
   }
 
