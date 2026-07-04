@@ -17,17 +17,17 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body {
-  height: 100%;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+html {
+  min-height: 100%;
   overflow-x: hidden;
 }
 
 body {
-  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: 'Segoe UI', system-ui, sans-serif;
   background: radial-gradient(ellipse at top, #1a0a35 0%, #0d0d1a 60%);
+  color: var(--text);
+  overflow-x: hidden;
 }
 
 /* ── Typography ── */
