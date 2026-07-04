@@ -216,6 +216,37 @@
     .final-pts { color: var(--accent); margin-left: auto; }
     .final-medal { font-size: 1.6rem; }
 
+    /* Host player panel */
+    .host-player-panel {
+      background: var(--surface2);
+      border: 1.5px solid var(--primary);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      width: 100%;
+    }
+
+    .host-player-panel textarea {
+      font-size: 0.95rem;
+      rows: 2;
+    }
+
+    /* Clickable voting cards */
+    .host-sub-card.votable {
+      cursor: pointer;
+    }
+    .host-sub-card.votable:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(168,85,247,0.2);
+    }
+    .host-sub-card.host-voted-for {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(251,191,36,0.25);
+    }
+
     /* Error banner */
     #host-error {
       position: fixed;
@@ -242,6 +273,12 @@
     <div class="big-player-list" id="lobby-player-list">
       <p class="text-muted">Waiting for players<span class="waiting-dots"></span></p>
     </div>
+
+    <div style="display:flex; gap:0.75rem; align-items:center; max-width:480px; width:100%">
+      <input type="text" id="host-name-input" placeholder="Your name (join as player)" maxlength="20" autocomplete="off" style="flex:1">
+      <button class="btn btn-ghost" id="host-join-btn" onclick="hostJoinAsPlayer()">Join</button>
+    </div>
+    <div class="error-msg" id="host-join-error" style="margin-top:-0.5rem"></div>
 
     <div class="round-settings">
       <label style="font-weight:600; color:var(--muted)">Rounds</label>
@@ -302,6 +339,17 @@
       <div class="progress-text" id="h-sub-progress">
         <span id="h-sub-count">0</span> / <span id="h-sub-total">0</span> submitted
       </div>
+      <div id="h-my-answer-panel" class="host-player-panel" style="display:none; max-width:480px">
+        <textarea id="h-answer-input" rows="2" maxlength="100"
+          placeholder="Your answer — name, slogan, whatever pun hits…"></textarea>
+        <div class="flex-row" style="gap:0.5rem">
+          <button class="btn btn-ghost" onclick="hostPass()" id="h-pass-btn">Pass</button>
+          <button class="btn btn-accent btn-full" onclick="hostSubmit()" id="h-submit-btn">Submit</button>
+        </div>
+      </div>
+      <div id="h-my-submitted" style="display:none; color:var(--green); font-weight:700">✓ Submitted!</div>
+      <div id="h-my-passed" style="display:none; color:var(--muted); font-weight:700">Passed</div>
+
       <div class="host-controls">
         <button class="btn btn-ghost" onclick="skipTimer()">Skip timer →</button>
       </div>
@@ -346,6 +394,7 @@
         <div class="prompt-text" id="h-vote-prompt" style="font-size:clamp(1.2rem,2.5vw,1.8rem)"></div>
       </div>
       <div class="host-submissions" id="h-vote-submissions"></div>
+      <div id="h-my-voted" style="display:none; color:var(--accent); font-weight:700; font-size:0.95rem">✓ You voted!</div>
       <div class="host-controls">
         <button class="btn btn-ghost" onclick="skipTimer()">End voting →</button>
       </div>
@@ -393,8 +442,66 @@
 const socket = io();
 socket.emit('joinAsHost');
 
-// Show join URL
 document.getElementById('join-url').textContent = window.location.origin;
+
+// ─── Host as player ───────────────────────────────────────────────────────────
+
+let hostPlayerState = null;
+let isHostPlayer = false;
+
+function hostJoinAsPlayer() {
+  const name = document.getElementById('host-name-input').value.trim();
+  if (!name) { document.getElementById('host-join-error').textContent = 'Enter a name'; return; }
+  socket.emit('joinGame', { name });
+}
+
+document.getElementById('host-name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') hostJoinAsPlayer();
+});
+
+socket.on('joined', () => {
+  isHostPlayer = true;
+  document.getElementById('host-name-input').disabled = true;
+  document.getElementById('host-join-btn').disabled = true;
+  document.getElementById('host-join-error').textContent = '';
+});
+
+socket.on('joinError', msg => {
+  document.getElementById('host-join-error').textContent = msg;
+});
+
+function hostSubmit() {
+  const text = document.getElementById('h-answer-input').value.trim();
+  if (!text) return;
+  socket.emit('submitAnswer', { text });
+}
+
+function hostPass() {
+  socket.emit('passRound');
+}
+
+function hostVote(targetId) {
+  socket.emit('vote', { targetId });
+}
+
+socket.on('playerState', (state) => {
+  hostPlayerState = state;
+
+  // Submitting panel
+  if (state.state === 'submitting' && isHostPlayer) {
+    const done = state.hasSubmitted || state.hasPassed;
+    document.getElementById('h-my-answer-panel').style.display = done ? 'none' : '';
+    document.getElementById('h-my-submitted').style.display = (state.hasSubmitted && !state.hasPassed) ? 'block' : 'none';
+    document.getElementById('h-my-passed').style.display = state.hasPassed ? 'block' : 'none';
+  }
+
+  // Voted confirmation
+  if (state.state === 'voting' && isHostPlayer) {
+    document.getElementById('h-my-voted').style.display = state.hasVoted ? 'block' : 'none';
+    // Re-render submissions to update clickability
+    if (state.submissions) renderVotingSubmissions(hostGameState, state);
+  }
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -472,9 +579,38 @@ function resetGame() {
   socket.emit('resetGame');
 }
 
+// ─── Voting submissions renderer ──────────────────────────────────────────────
+
+let hostGameState = null;
+
+function renderVotingSubmissions(gState, pState) {
+  if (!gState?.submissions) return;
+  const canVote = isHostPlayer && pState && !pState.hasVoted;
+  const maxVotes = Math.max(0, ...gState.submissions.map(s => s.votes));
+
+  document.getElementById('h-vote-submissions').innerHTML = gState.submissions.map(s => {
+    const myVote = pState?.submissions?.find(ps => ps.id === s.id)?.votedFor;
+    let cls = 'host-sub-card';
+    if (s.votes > 0 && s.votes === maxVotes) cls += ' winner';
+    if (myVote) cls += ' host-voted-for';
+    const isOwn = pState?.submissions?.find(ps => ps.id === s.id)?.isOwn;
+    if (canVote && !isOwn) cls += ' votable';
+    const onclick = (canVote && !isOwn) ? `onclick="hostVote('${s.id}')"` : '';
+    return `
+      <div class="${cls}" ${onclick}>
+        <div class="submission-bar-wrap" style="flex:1">
+          <div class="host-sub-text">${escHtml(s.text)}</div>
+          <div class="host-vote-bar" style="width:${maxVotes > 0 ? Math.round(s.votes/maxVotes*100) : 0}%"></div>
+        </div>
+        <div class="host-sub-votes">${s.votes > 0 ? '▲' + s.votes : '–'}</div>
+      </div>`;
+  }).join('');
+}
+
 // ─── State handler ────────────────────────────────────────────────────────────
 
 socket.on('gameState', (state) => {
+  hostGameState = state;
   // Lobby
   if (state.state === 'lobby') {
     showScreen('h-lobby');
@@ -499,13 +635,20 @@ socket.on('gameState', (state) => {
     document.getElementById('h-sub-round').textContent = `Round ${state.round} of ${state.maxRounds}`;
     document.getElementById('h-sub-prompt').innerHTML = formatPrompt(state.prompt);
     updateTimer('h-sub-timer', state.timeLeft);
-    document.getElementById('h-sub-count').textContent = state.submittedCount;
-    document.getElementById('h-sub-total').textContent = state.playerCount;
     const passedNote = state.passedCount > 0 ? ` · ${state.passedCount} passed` : '';
     document.getElementById('h-sub-progress').innerHTML =
       `<span>${state.submittedCount}</span> / <span>${state.playerCount}</span> submitted${passedNote}`;
     renderPlayerStatus(state.players, 'sub-player-list', 'submit');
     renderSideScores(state.players, 'sub-scores');
+    // Show answer panel for host-player
+    if (isHostPlayer && hostPlayerState) {
+      const done = hostPlayerState.hasSubmitted || hostPlayerState.hasPassed;
+      document.getElementById('h-my-answer-panel').style.display = done ? 'none' : '';
+      document.getElementById('h-my-submitted').style.display = (hostPlayerState.hasSubmitted && !hostPlayerState.hasPassed) ? 'block' : 'none';
+      document.getElementById('h-my-passed').style.display = hostPlayerState.hasPassed ? 'block' : 'none';
+    } else if (isHostPlayer) {
+      document.getElementById('h-my-answer-panel').style.display = '';
+    }
     return;
   }
 
@@ -532,22 +675,11 @@ socket.on('gameState', (state) => {
     showScreen('h-voting');
     document.getElementById('h-vote-round').textContent = `Round ${state.round} of ${state.maxRounds}`;
     document.getElementById('h-vote-prompt').innerHTML = formatPrompt(state.prompt);
-    updateTimer('h-vote-timer', state.timeLeft);
     renderPlayerStatus(state.players, 'vote-player-list', 'vote');
     renderSideScores(state.players, 'vote-scores');
-
-    if (state.submissions) {
-      const maxVotes = Math.max(0, ...state.submissions.map(s => s.votes));
-      document.getElementById('h-vote-submissions').innerHTML = state.submissions.map(s => `
-        <div class="host-sub-card ${s.votes > 0 && s.votes === maxVotes ? 'winner' : ''}">
-          <div class="submission-bar-wrap" style="flex:1">
-            <div class="host-sub-text">${escHtml(s.text)}</div>
-            <div class="host-vote-bar" style="width:${maxVotes > 0 ? Math.round(s.votes/maxVotes*100) : 0}%"></div>
-          </div>
-          <div class="host-sub-votes">${s.votes > 0 ? '▲' + s.votes : '–'}</div>
-        </div>
-      `).join('');
-    }
+    renderVotingSubmissions(state, hostPlayerState);
+    document.getElementById('h-my-voted').style.display =
+      (isHostPlayer && hostPlayerState?.hasVoted) ? 'block' : 'none';
     return;
   }
 
@@ -591,11 +723,8 @@ socket.on('gameState', (state) => {
   }
 });
 
-// Smooth timer updates
 socket.on('timer', (t) => {
-  // Try both timer elements — only the active screen's will be visible
   updateTimer('h-sub-timer', t);
-  updateTimer('h-vote-timer', t);
 });
 
 socket.on('hostError', showError);
