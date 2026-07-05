@@ -71,12 +71,17 @@ async function initData() {
 
 let fakeDateOverride = null; // test-only, set via /_test/advance-day
 
-function pad2(n) { return n < 10 ? '0' + n : String(n); }
+const DAY_KEY_TIMEZONE = 'Europe/Berlin';
+const dayKeyFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: DAY_KEY_TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+});
 
 function todayKey() {
   const d = fakeDateOverride ? new Date(fakeDateOverride) : new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-  // Local server time, not UTC — "midnight" follows this process's timezone.
+  const parts = dayKeyFormatter.formatToParts(d);
+  const get = type => parts.find(p => p.type === type).value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+  // Berlin time, regardless of server timezone — "midnight" is German midnight.
 }
 
 // ─── Daily AI players ───────────────────────────────────────────────────────────
