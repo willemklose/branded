@@ -285,6 +285,8 @@
     </div>
     <div class="error-msg" id="host-join-error" style="margin-top:-0.5rem"></div>
 
+    <button class="btn btn-ghost" id="add-ai-btn" onclick="addAiPlayer()">+ 🤖 AI Player</button>
+
     <div class="round-settings">
       <label id="rounds-label" style="font-weight:600; color:var(--muted)">Rounds</label>
       <input type="number" id="round-count" value="5" min="1" max="10">
@@ -584,6 +586,14 @@ function resetGame() {
   socket.emit('resetGame');
 }
 
+function addAiPlayer() {
+  socket.emit('addAiPlayer');
+}
+
+function removeAiPlayer(id) {
+  socket.emit('removeAiPlayer', { id });
+}
+
 // ─── Voting submissions renderer ──────────────────────────────────────────────
 
 let hostGameState = null;
@@ -625,8 +635,9 @@ socket.on('gameState', (state) => {
     if (state.playerCount === 0) {
       list.innerHTML = `<p class="text-muted">${t.waitingPlayers}<span class="waiting-dots"></span></p>`;
     } else {
-      list.innerHTML = state.players.map(p =>
-        `<div class="big-player-chip">${p.name}</div>`
+      list.innerHTML = state.players.map(p => p.isAI
+        ? `<div class="big-player-chip">🤖 ${p.name} <span style="cursor:pointer; color:var(--muted); font-weight:400" onclick="removeAiPlayer('${p.id}')" title="Remove">✕</span></div>`
+        : `<div class="big-player-chip">${p.name}</div>`
       ).join('');
     }
     const btn = document.getElementById('start-btn');

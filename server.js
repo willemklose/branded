@@ -1,12 +1,15 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
+const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+const anthropic = new Anthropic();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -101,6 +104,109 @@ function pickPrompt() {
   return { type: 'product', business: b, product: second, text: `A ${b} that also sells ${second}` };
 }
 
+// ─── AI players ───────────────────────────────────────────────────────────────
+
+const AI_MODEL = 'claude-haiku-4-5';
+
+const AI_NAME_POOL = {
+  en: [
+    'Mike Hawk', 'Seymour Butz', 'Hugh Jass', 'Ivana Tinkle', 'Anita Bath',
+    'Amanda Hugginkiss', 'Al Coholic', 'Oliver Klozoff', 'Barry McKockiner',
+    'Wayne Kerr', 'Dixie Normous', 'Heywood Jablome', 'Ben Dover',
+    'Chris P. Bacon', 'Moe Lester', 'Justin Case', 'Phil McCrackin'
+  ],
+  de: [
+    'Anna Nass', 'Peter Silie', 'Rosa Munde', 'Klaus Trophobie', 'Anna Bolika',
+    'Elli Fant', 'Mario Nette', 'Justin Zeit', 'Kurt Schluss', 'Uwe Schlüpfrig'
+  ]
+};
+
+function pickAiName(lang) {
+  const pool = AI_NAME_POOL[lang] || AI_NAME_POOL.en;
+  const used = new Set(Object.values(game.players).map(p => p.name));
+  const available = pool.filter(n => !used.has(n));
+  const source = available.length > 0 ? available : pool;
+  const base = source[Math.floor(Math.random() * source.length)];
+  if (!used.has(base)) return base;
+  let i = 2;
+  while (used.has(`${base} ${i}`)) i++;
+  return `${base} ${i}`;
+}
+
+const AI_SYSTEM_PROMPT = {
+  en: 'You are playing a party game called "Branded" (in the style of Quiplash). ' +
+      'You will be given a prompt describing a business, e.g. "A butcher that also sells kayaks" ' +
+      'or "Goth-themed bakery". Reply with a short, funny submission — a business name, slogan, ' +
+      'or pun — under 100 characters. Reply with ONLY the submission text, no quotes, no explanation.',
+  de: 'Du spielst ein Partyspiel namens "Branded" (im Stil von Quiplash). ' +
+      'Du bekommst eine Aufgabe, die ein Unternehmen beschreibt, z.B. "Ein Metzger, der auch Kajaks verkauft" ' +
+      'oder "Goth-Bäckerei". Antworte mit einem kurzen, witzigen Vorschlag — ein Firmenname, Slogan ' +
+      'oder Wortspiel — unter 100 Zeichen. Antworte NUR mit dem Vorschlag, ohne Anführungszeichen, ohne Erklärung.'
+};
+
+const AI_FALLBACK_ANSWERS = {
+  en: ['Absolutely Cursed Inc.', 'Just Add Puns', 'We Deliver... Something', 'No Refunds, Only Vibes'],
+  de: ['Einfach Mal Machen GmbH', 'Fragen Sie Nicht Warum', 'Irgendwas Mit Herz', 'Keine Rückgabe, Nur Vibes']
+};
+
+async function generateAiAnswer(prompt, lang) {
+  try {
+    const response = await anthropic.messages.create({
+      model: AI_MODEL,
+      max_tokens: 60,
+      system: AI_SYSTEM_PROMPT[lang] || AI_SYSTEM_PROMPT.en,
+      messages: [{ role: 'user', content: prompt.text }]
+    });
+    if (response.stop_reason === 'refusal') throw new Error('refusal');
+    const block = response.content.find(b => b.type === 'text');
+    const text = block?.text?.trim().replace(/^"(.*)"$/, '$1');
+    if (!text) throw new Error('empty response');
+    return text.slice(0, 100);
+  } catch (err) {
+    console.error('AI answer generation failed:', err.message);
+    const pool = AI_FALLBACK_ANSWERS[lang] || AI_FALLBACK_ANSWERS.en;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+}
+
+function triggerAiSubmissions() {
+  const round = game.round;
+  Object.entries(game.players).forEach(([id, p]) => {
+    if (!p.isAI) return;
+    const delay = 3000 + Math.random() * 9000;
+    setTimeout(async () => {
+      if (game.round !== round || game.state !== 'submitting') return;
+      if (!game.players[id] || game.players[id].hasSubmitted || game.players[id].hasPassed) return;
+      const text = await generateAiAnswer(game.prompt, activeLang);
+      if (game.round !== round || game.state !== 'submitting') return;
+      if (!game.players[id] || game.players[id].hasSubmitted || game.players[id].hasPassed) return;
+      game.submissions[id] = { text, votes: [] };
+      game.players[id].hasSubmitted = true;
+      broadcast();
+      checkAllSubmitted();
+    }, delay);
+  });
+}
+
+function triggerAiVotes() {
+  const round = game.round;
+  Object.entries(game.players).forEach(([id, p]) => {
+    if (!p.isAI) return;
+    const delay = 1500 + Math.random() * 4000;
+    setTimeout(() => {
+      if (game.round !== round || game.state !== 'voting') return;
+      if (!game.players[id] || game.players[id].hasVoted) return;
+      const candidates = Object.keys(game.submissions).filter(sid => sid !== id);
+      if (candidates.length === 0) return;
+      const target = candidates[Math.floor(Math.random() * candidates.length)];
+      game.submissions[target].votes.push(id);
+      game.players[id].hasVoted = true;
+      broadcast();
+      checkAllVoted();
+    }, delay);
+  });
+}
+
 function startTimer(seconds, onEnd) {
   clearInterval(game.timer);
   game.timeLeft = seconds;
@@ -116,7 +222,7 @@ function startTimer(seconds, onEnd) {
 
 function hostState() {
   const players = Object.entries(game.players).map(([id, p]) => ({
-    id, name: p.name, score: p.score,
+    id, name: p.name, score: p.score, isAI: !!p.isAI,
     hasSubmitted: p.hasSubmitted, hasVoted: p.hasVoted, hasPassed: p.hasPassed
   }));
 
@@ -190,6 +296,7 @@ function startRound() {
   game.state = 'submitting';
   broadcast();
   startTimer(180, startPresenting);  // 3 minutes
+  triggerAiSubmissions();
 }
 
 function startPresenting() {
@@ -206,6 +313,7 @@ function startVoting() {
   game.state = 'voting';
   broadcast();
   // No timer — ends when all players have voted or host skips
+  triggerAiVotes();
 }
 
 function endRound() {
@@ -268,6 +376,22 @@ io.on('connection', socket => {
     game.players[socket.id] = { name: trimmed, score: 0, hasSubmitted: false, hasVoted: false, hasPassed: false };
     socket.emit('joined', { name: trimmed });
     broadcast();
+  });
+
+  socket.on('addAiPlayer', () => {
+    if (game.state !== 'lobby') return;
+    const id = `ai-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const name = pickAiName(activeLang);
+    game.players[id] = { name, score: 0, hasSubmitted: false, hasVoted: false, hasPassed: false, isAI: true };
+    broadcast();
+  });
+
+  socket.on('removeAiPlayer', ({ id }) => {
+    if (game.state !== 'lobby') return;
+    if (game.players[id]?.isAI) {
+      delete game.players[id];
+      broadcast();
+    }
   });
 
   socket.on('startGame', ({ rounds }) => {
