@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <title>Branded — Daily</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .screen { display: none !important; }
+    .screen.active {
+      display: block !important;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      background: var(--bg);
+    }
+    .inner {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem env(safe-area-inset-bottom, 3rem);
+      padding-bottom: max(3rem, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1.25rem;
+      text-align: center;
+      min-height: 100%;
+      box-sizing: border-box;
+    }
+    .inner > .logo, .inner > .subtitle { align-self: center; }
+    input[type="text"], textarea { font-size: 16px !important; }
+    .btn { min-height: 52px; }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .toggle-group { display: flex; gap: 0.4rem; }
+    .toggle-btn {
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .toggle-btn.active {
+      background: linear-gradient(135deg, var(--primary), #7c3aed);
+      color: #fff;
+      border-color: transparent;
+    }
+    .tab-bar {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.6rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 44px;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--primary), #7c3aed);
+      color: #fff;
+      border-color: transparent;
+    }
+    .day-summary { cursor: pointer; text-align: left; }
+    .day-detail { display: flex; flex-direction: column; gap: 0.6rem; }
+    .back-link { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+    .back-link:hover { color: var(--text); }
+    .edit-name-link { color: var(--muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline; align-self: center; }
+  </style>
+</head>
+<body>
+
+<!-- ─── Name Entry ─────────────────────────────────── -->
+<div id="screen-name" class="screen active">
+  <div class="inner" style="justify-content:center; min-height:100dvh">
+    <div class="logo">Branded Daily</div>
+    <p class="subtitle">One prompt a day. Submit once. Vote forever.</p>
+    <div class="card flex-col" style="gap:1rem">
+      <input type="text" id="name-input" placeholder="Your name" maxlength="20" autocomplete="off" spellcheck="false">
+      <div class="error-msg" id="name-error"></div>
+      <button class="btn btn-primary btn-full" onclick="continueWithName()">Continue</button>
+    </div>
+    <a class="back-link" href="/">← Play the live party game</a>
+  </div>
+</div>
+
+<!-- ─── Main App ───────────────────────────────────── -->
+<div id="screen-app" class="screen">
+  <div class="inner">
+    <div class="top-row">
+      <a class="back-link" href="/">← Live game</a>
+      <div class="toggle-group">
+        <button class="toggle-btn" id="lang-en-btn" onclick="setLang('en')">EN</button>
+        <button class="toggle-btn" id="lang-de-btn" onclick="setLang('de')">DE</button>
+      </div>
+    </div>
+    <div class="logo" style="font-size:clamp(1.8rem,6vw,2.6rem)">Branded Daily</div>
+    <span class="edit-name-link" onclick="editName()">Playing as <strong id="my-name-label"></strong> — edit name</span>
+
+    <div class="tab-bar">
+      <button class="tab-btn" id="tabbtn-today" onclick="showTab('today')">Today</button>
+      <button class="tab-btn" id="tabbtn-history" onclick="showTab('history')">History</button>
+      <button class="tab-btn" id="tabbtn-leaderboard" onclick="showTab('leaderboard')">Leaderboard</button>
+    </div>
+
+    <!-- Today -->
+    <div id="view-today">
+      <div class="prompt-box">
+        <div class="prompt-label">Today's prompt</div>
+        <div class="prompt-text" id="today-prompt"></div>
+      </div>
+      <p class="text-muted" id="today-count" style="font-size:0.85rem"></p>
+
+      <div class="card flex-col" style="gap:0.5rem" id="today-submit-card">
+        <textarea id="daily-answer-input" rows="3" maxlength="100"
+          placeholder="Name, slogan, tagline — whatever pun comes to mind…"></textarea>
+        <div class="char-count" id="daily-char-count">0 / 100</div>
+        <div class="error-msg" id="daily-submit-error"></div>
+        <button class="btn btn-accent btn-full" onclick="submitDaily()">Submit</button>
+      </div>
+
+      <div class="card" id="today-done-card" style="display:none; text-align:left">
+        <p style="color:var(--green); font-weight:700; margin-bottom:0.75rem">✓ Submitted for today</p>
+        <div class="submission-card own locked">
+          <span class="submission-text" id="today-my-answer"></span>
+        </div>
+        <p class="text-muted" style="font-size:0.85rem; margin-top:0.75rem">
+          Come back after midnight to see everyone's answers and vote.
+        </p>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="view-history" style="display:none">
+      <div class="flex-col" id="history-list" style="gap:0.75rem"></div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div id="view-leaderboard" style="display:none">
+      <div class="card" style="text-align:left">
+        <h3 style="margin-bottom:0.75rem">🏆 Hall of Fame</h3>
+        <div id="hof-card"></div>
+      </div>
+      <div class="divider" style="margin:1rem 0"></div>
+      <p class="text-muted" style="font-size:0.85rem">Medals &amp; days submitted</p>
+      <div class="leaderboard" id="leaderboard-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Identity ─────────────────────────────────────────────────────────────────
+
+let deviceId = localStorage.getItem('brandedDailyDeviceId');
+let myName = localStorage.getItem('brandedDailyName');
+let dailyLang = localStorage.getItem('brandedDailyLang') || 'en';
+
+if (!deviceId) {
+  deviceId = crypto.randomUUID();
+  localStorage.setItem('brandedDailyDeviceId', deviceId);
+}
+
+// ─── Helpers (mirrors index.html's formatPrompt/escHtml) ───────────────────────
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  el.scrollTop = 0;
+}
+
+function formatPrompt(prompt) {
+  if (!prompt) return '';
+  if (prompt.lang === 'de') {
+    // German text comes pre-corrected by the server's grammar check — render it
+    // as-is rather than rebuilding it from a hardcoded (gender-unaware) template.
+    let html = escHtml(prompt.text);
+    [prompt.business, prompt.type === 'theme' ? prompt.theme : prompt.product].filter(Boolean).forEach(term => {
+      const escTerm = escHtml(term);
+      if (html.includes(escTerm)) html = html.replace(escTerm, `<span class="highlight">${escTerm}</span>`);
+    });
+    return html;
+  }
+  if (prompt.type === 'theme') {
+    return `A <span class="highlight">${prompt.theme}</span>-themed <span class="highlight">${prompt.business}</span>`;
+  }
+  return `A <span class="highlight">${prompt.business}</span> that also sells <span class="highlight">${prompt.product}</span>`;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+
+const API = '/api/daily';
+
+function qs(params) {
+  return Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+}
+
+async function apiGet(path, params = {}) {
+  const res = await fetch(`${API}${path}?${qs({ ...params, deviceId, lang: dailyLang })}`);
+  return res.json();
+}
+
+async function apiPost(path, body = {}) {
+  const res = await fetch(`${API}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...body, deviceId, lang: dailyLang })
+  });
+  return { status: res.status, data: await res.json() };
+}
+
+// ─── Name entry ─────────────────────────────────────────────────────────────────
+
+function continueWithName() {
+  const name = document.getElementById('name-input').value.trim().slice(0, 20);
+  if (!name) { document.getElementById('name-error').textContent = 'Enter a name'; return; }
+  document.getElementById('name-error').textContent = '';
+  myName = name;
+  localStorage.setItem('brandedDailyName', name);
+  enterApp();
+}
+
+function editName() {
+  document.getElementById('name-input').value = myName || '';
+  show('screen-name');
+}
+
+function enterApp() {
+  document.getElementById('my-name-label').textContent = myName;
+  applyLangButtons();
+  show('screen-app');
+  showTab(activeTab);
+}
+
+// ─── Language toggle ────────────────────────────────────────────────────────────
+
+function applyLangButtons() {
+  document.getElementById('lang-en-btn').classList.toggle('active', dailyLang === 'en');
+  document.getElementById('lang-de-btn').classList.toggle('active', dailyLang === 'de');
+}
+
+function setLang(lang) {
+  if (lang === dailyLang) return;
+  dailyLang = lang;
+  localStorage.setItem('brandedDailyLang', lang);
+  applyLangButtons();
+  dayDetailCache.clear();
+  tabLoaders[activeTab]();
+}
+
+// ─── Tabs ───────────────────────────────────────────────────────────────────────
+
+let activeTab = 'today';
+const tabLoaders = { today: loadToday, history: loadHistory, leaderboard: loadLeaderboard };
+
+function showTab(tab) {
+  activeTab = tab;
+  ['today', 'history', 'leaderboard'].forEach(t => {
+    document.getElementById(`view-${t}`).style.display = t === tab ? '' : 'none';
+    document.getElementById(`tabbtn-${t}`).classList.toggle('active', t === tab);
+  });
+  tabLoaders[tab]();
+}
+
+// ─── Today ──────────────────────────────────────────────────────────────────────
+
+const answerInput = document.getElementById('daily-answer-input');
+const charCountEl = document.getElementById('daily-char-count');
+answerInput.addEventListener('input', () => {
+  const len = answerInput.value.length;
+  charCountEl.textContent = `${len} / 100`;
+  charCountEl.className = 'char-count' + (len >= 90 ? ' warn' : '');
+});
+
+async function loadToday() {
+  const state = await apiGet('/today');
+  document.getElementById('today-prompt').innerHTML = formatPrompt(state.prompt);
+  document.getElementById('today-count').textContent =
+    `${state.submissionCount} answer${state.submissionCount === 1 ? '' : 's'} in so far`;
+
+  const submitCard = document.getElementById('today-submit-card');
+  const doneCard = document.getElementById('today-done-card');
+  if (state.hasSubmitted) {
+    submitCard.style.display = 'none';
+    doneCard.style.display = '';
+    document.getElementById('today-my-answer').textContent = state.mySubmission.text;
+  } else {
+    submitCard.style.display = '';
+    doneCard.style.display = 'none';
+    answerInput.value = '';
+    charCountEl.textContent = '0 / 100';
+    document.getElementById('daily-submit-error').textContent = '';
+  }
+}
+
+async function submitDaily() {
+  const text = answerInput.value.trim();
+  if (!text) return;
+  const { status, data } = await apiPost('/submit', { name: myName, text });
+  if (status !== 200) {
+    document.getElementById('daily-submit-error').textContent = data.error || 'Something went wrong';
+    return;
+  }
+  loadToday();
+}
+
+// ─── History ────────────────────────────────────────────────────────────────────
+
+const dayDetailCache = new Map();
+
+async function loadHistory() {
+  dayDetailCache.clear();
+  const { days } = await apiGet('/history');
+  const container = document.getElementById('history-list');
+  if (days.length === 0) {
+    container.innerHTML = '<p class="text-muted">No past days yet — check back tomorrow.</p>';
+    return;
+  }
+  container.innerHTML = days.map(d => `
+    <div class="card day-summary" onclick="toggleDay('${d.dayKey}')">
+      <div class="flex-row" style="justify-content:space-between; width:100%">
+        <div>
+          <div class="text-muted" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em">${d.dayKey}</div>
+          <div style="font-weight:700">${formatPrompt(d.prompt)}</div>
+        </div>
+        <div class="text-muted" style="font-size:0.85rem; white-space:nowrap">${d.submissionCount} answer${d.submissionCount === 1 ? '' : 's'}</div>
+      </div>
+      <div class="day-detail" id="day-detail-${d.dayKey}" style="display:none; margin-top:1rem"></div>
+    </div>
+  `).join('');
+}
+
+async function toggleDay(dayKey) {
+  const el = document.getElementById(`day-detail-${dayKey}`);
+  const showing = el.style.display !== 'none';
+  document.querySelectorAll('.day-detail').forEach(d => d.style.display = 'none');
+  if (showing) return;
+  el.style.display = '';
+  if (!dayDetailCache.has(dayKey)) {
+    dayDetailCache.set(dayKey, await apiGet(`/day/${dayKey}`));
+  }
+  renderDayDetail(dayKey);
+}
+
+function renderDayDetail(dayKey) {
+  const el = document.getElementById(`day-detail-${dayKey}`);
+  const detail = dayDetailCache.get(dayKey);
+  el.innerHTML = detail.submissions.map(s => {
+    let cls = 'submission-card';
+    if (s.isOwn) cls += ' own';
+    if (s.votedByMe) cls += ' voted-for';
+    const onclick = !s.isOwn ? `onclick="event.stopPropagation(); toggleVote('${dayKey}','${s.id}')"` : '';
+    return `<div class="${cls}" ${onclick}>
+      <span class="submission-text">${escHtml(s.text)} <span class="text-muted" style="font-weight:400">— ${escHtml(s.name)}</span></span>
+      <span class="vote-count">${s.votes > 0 ? '▲' + s.votes : '–'}</span>
+    </div>`;
+  }).join('');
+}
+
+async function toggleVote(dayKey, targetId) {
+  const { status, data } = await apiPost('/vote', { dayKey, targetId });
+  if (status !== 200) return;
+  const detail = dayDetailCache.get(dayKey);
+  const sub = detail.submissions.find(s => s.id === targetId);
+  sub.votes = data.votes;
+  sub.votedByMe = data.votedByMe;
+  detail.submissions.sort((a, b) => b.votes - a.votes);
+  renderDayDetail(dayKey);
+}
+
+// ─── Leaderboard ────────────────────────────────────────────────────────────────
+
+async function loadLeaderboard() {
+  const [hof, board] = await Promise.all([apiGet('/hall-of-fame'), apiGet('/leaderboard')]);
+
+  const hofEl = document.getElementById('hof-card');
+  if (hof.entries.length === 0) {
+    hofEl.innerHTML = '<p class="text-muted">No votes cast yet — be the first to upvote something in History.</p>';
+  } else {
+    hofEl.innerHTML = hof.entries.map(e => `
+      <div style="margin-bottom:0.75rem">
+        <div class="text-muted" style="font-size:0.75rem">${e.dayKey}</div>
+        <div style="font-weight:700; margin-bottom:0.5rem">${formatPrompt(e.prompt)}</div>
+        <div class="submission-card locked">
+          <span class="submission-text">${escHtml(e.text)} <span class="text-muted" style="font-weight:400">— ${escHtml(e.name)}</span></span>
+          <span class="vote-count">▲${hof.votes}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const listEl = document.getElementById('leaderboard-list');
+  if (board.players.length === 0) {
+    listEl.innerHTML = '<p class="text-muted">No submissions yet.</p>';
+    return;
+  }
+  listEl.innerHTML = board.players.map(p => `
+    <div class="score-row ${p.deviceId === deviceId ? 'winner' : ''}">
+      <span class="score-name">${escHtml(p.name)}</span>
+      <span class="text-muted" style="font-size:0.9rem">🥇${p.gold} 🥈${p.silver} 🥉${p.bronze} · ${p.daysSubmitted}d</span>
+    </div>
+  `).join('');
+}
+
+// ─── Init ───────────────────────────────────────────────────────────────────────
+
+if (myName) {
+  enterApp();
+} else {
+  show('screen-name');
+}
+</script>
+</body>
+</html>

@@ -65,6 +65,7 @@
       <div class="error-msg" id="join-error"></div>
       <button class="btn btn-primary btn-full" id="p-join-btn" onclick="joinGame()">Join Game</button>
     </div>
+    <a href="/daily" class="text-muted" style="font-size:0.85rem">Play Daily Mode →</a>
   </div>
 </div>
 
@@ -189,14 +190,18 @@ function updateTimer(el, t) {
 
 function formatPrompt(prompt) {
   if (!prompt) return '';
-  if (prompt.type === 'theme') {
-    if (prompt.lang === 'de') {
-      return `<span class="highlight">${prompt.theme}</span>-<span class="highlight">${prompt.business}</span>`;
-    }
-    return `A <span class="highlight">${prompt.theme}</span>-themed <span class="highlight">${prompt.business}</span>`;
-  }
   if (prompt.lang === 'de') {
-    return `Ein <span class="highlight">${prompt.business}</span>, der auch <span class="highlight">${prompt.product}</span> verkauft`;
+    // German text comes pre-corrected by the server's grammar check — render it
+    // as-is rather than rebuilding it from a hardcoded (gender-unaware) template.
+    let html = escHtml(prompt.text);
+    [prompt.business, prompt.type === 'theme' ? prompt.theme : prompt.product].filter(Boolean).forEach(term => {
+      const escTerm = escHtml(term);
+      if (html.includes(escTerm)) html = html.replace(escTerm, `<span class="highlight">${escTerm}</span>`);
+    });
+    return html;
+  }
+  if (prompt.type === 'theme') {
+    return `A <span class="highlight">${prompt.theme}</span>-themed <span class="highlight">${prompt.business}</span>`;
   }
   return `A <span class="highlight">${prompt.business}</span> that also sells <span class="highlight">${prompt.product}</span>`;
 }

@@ -1,2 +1,4 @@
 node_modules/
 .env
+daily-data.json
+daily-data.json.tmp

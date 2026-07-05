@@ -3,13 +3,13 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const fs = require('fs');
-const Anthropic = require('@anthropic-ai/sdk');
+const { loadLists, saveLists } = require('./prompts');
+const { generateAiAnswer, pickCheckedPrompt } = require('./ai');
+const registerDaily = require('./daily');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-const anthropic = new Anthropic();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -22,23 +22,7 @@ app.get('/host', (req, res) => {
 
 let activeLang = 'en';
 
-function listsFile(lang) {
-  return path.join(__dirname, lang === 'de' ? 'lists-de.json' : 'lists.json');
-}
-
-function loadLists() {
-  try {
-    return JSON.parse(fs.readFileSync(listsFile(activeLang), 'utf8'));
-  } catch {
-    return { businesses: [], products: [], themes: [] };
-  }
-}
-
-function saveLists(data, lang) {
-  fs.writeFileSync(listsFile(lang), JSON.stringify(data, null, 2));
-}
-
-app.get('/api/lists', (req, res) => res.json({ ...loadLists(), lang: activeLang }));
+app.get('/api/lists', (req, res) => res.json({ ...loadLists(activeLang), lang: activeLang }));
 
 app.post('/api/lists', (req, res) => {
   const { businesses, products, themes } = req.body;
@@ -76,34 +60,6 @@ function freshGame() {
 
 let game = freshGame();
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function pickPrompt() {
-  const { businesses, products, themes = [] } = loadLists();
-  const useTheme = themes.length > 0 && Math.random() < 0.2;
-  const pool = useTheme ? themes : products;
-
-  let b, second, key, attempts = 0;
-  do {
-    b = businesses[Math.floor(Math.random() * businesses.length)];
-    second = pool[Math.floor(Math.random() * pool.length)];
-    key = `${useTheme ? 't' : 'p'}|${b}|${second}`;
-    attempts++;
-  } while (game.usedPrompts.has(key) && attempts < 200);
-  game.usedPrompts.add(key);
-
-  if (activeLang === 'de') {
-    if (useTheme) {
-      return { type: 'theme', business: b, theme: second, text: `${second}-${b}`, lang: 'de' };
-    }
-    return { type: 'product', business: b, product: second, text: `Ein ${b}, der auch ${second} verkauft`, lang: 'de' };
-  }
-  if (useTheme) {
-    return { type: 'theme', business: b, theme: second, text: `A ${second}-themed ${b}` };
-  }
-  return { type: 'product', business: b, product: second, text: `A ${b} that also sells ${second}` };
-}
-
 // ─── AI players ───────────────────────────────────────────────────────────────
 
 const AI_MODEL = 'claude-haiku-4-5';
@@ -133,42 +89,6 @@ function pickAiName(lang) {
   return `${base} ${i}`;
 }
 
-const AI_SYSTEM_PROMPT = {
-  en: 'You are playing a party game called "Branded" (in the style of Quiplash). ' +
-      'You will be given a prompt describing a business, e.g. "A butcher that also sells kayaks" ' +
-      'or "Goth-themed bakery". Reply with a short, funny submission — a business name, slogan, ' +
-      'or pun — under 100 characters. Reply with ONLY the submission text, no quotes, no explanation.',
-  de: 'Du spielst ein Partyspiel namens "Branded" (im Stil von Quiplash). ' +
-      'Du bekommst eine Aufgabe, die ein Unternehmen beschreibt, z.B. "Ein Metzger, der auch Kajaks verkauft" ' +
-      'oder "Goth-Bäckerei". Antworte mit einem kurzen, witzigen Vorschlag — ein Firmenname, Slogan ' +
-      'oder Wortspiel — unter 100 Zeichen. Antworte NUR mit dem Vorschlag, ohne Anführungszeichen, ohne Erklärung.'
-};
-
-const AI_FALLBACK_ANSWERS = {
-  en: ['Absolutely Cursed Inc.', 'Just Add Puns', 'We Deliver... Something', 'No Refunds, Only Vibes'],
-  de: ['Einfach Mal Machen GmbH', 'Fragen Sie Nicht Warum', 'Irgendwas Mit Herz', 'Keine Rückgabe, Nur Vibes']
-};
-
-async function generateAiAnswer(prompt, lang) {
-  try {
-    const response = await anthropic.messages.create({
-      model: AI_MODEL,
-      max_tokens: 60,
-      system: AI_SYSTEM_PROMPT[lang] || AI_SYSTEM_PROMPT.en,
-      messages: [{ role: 'user', content: prompt.text }]
-    });
-    if (response.stop_reason === 'refusal') throw new Error('refusal');
-    const block = response.content.find(b => b.type === 'text');
-    const text = block?.text?.trim().replace(/^"(.*)"$/, '$1');
-    if (!text) throw new Error('empty response');
-    return text.slice(0, 100);
-  } catch (err) {
-    console.error('AI answer generation failed:', err.message);
-    const pool = AI_FALLBACK_ANSWERS[lang] || AI_FALLBACK_ANSWERS.en;
-    return pool[Math.floor(Math.random() * pool.length)];
-  }
-}
-
 function triggerAiSubmissions() {
   const round = game.round;
   Object.entries(game.players).forEach(([id, p]) => {
@@ -177,32 +97,13 @@ function triggerAiSubmissions() {
     setTimeout(async () => {
       if (game.round !== round || game.state !== 'submitting') return;
       if (!game.players[id] || game.players[id].hasSubmitted || game.players[id].hasPassed) return;
-      const text = await generateAiAnswer(game.prompt, activeLang);
+      const text = await generateAiAnswer(game.prompt.text, activeLang, AI_MODEL);
       if (game.round !== round || game.state !== 'submitting') return;
       if (!game.players[id] || game.players[id].hasSubmitted || game.players[id].hasPassed) return;
       game.submissions[id] = { text, votes: [] };
       game.players[id].hasSubmitted = true;
       broadcast();
       checkAllSubmitted();
-    }, delay);
-  });
-}
-
-function triggerAiVotes() {
-  const round = game.round;
-  Object.entries(game.players).forEach(([id, p]) => {
-    if (!p.isAI) return;
-    const delay = 1500 + Math.random() * 4000;
-    setTimeout(() => {
-      if (game.round !== round || game.state !== 'voting') return;
-      if (!game.players[id] || game.players[id].hasVoted) return;
-      const candidates = Object.keys(game.submissions).filter(sid => sid !== id);
-      if (candidates.length === 0) return;
-      const target = candidates[Math.floor(Math.random() * candidates.length)];
-      game.submissions[target].votes.push(id);
-      game.players[id].hasVoted = true;
-      broadcast();
-      checkAllVoted();
     }, delay);
   });
 }
@@ -284,9 +185,9 @@ function broadcast() {
 
 // ─── Game flow ────────────────────────────────────────────────────────────────
 
-function startRound() {
+async function startRound() {
   game.round++;
-  game.prompt = pickPrompt();
+  game.prompt = await pickCheckedPrompt(game.usedPrompts, activeLang);
   game.submissions = {};
   Object.values(game.players).forEach(p => {
     p.hasSubmitted = false;
@@ -312,8 +213,8 @@ function startPresenting() {
 function startVoting() {
   game.state = 'voting';
   broadcast();
-  // No timer — ends when all players have voted or host skips
-  triggerAiVotes();
+  // No timer — ends when all (non-AI) players have voted or host skips.
+  // AI players never vote, only submit — see checkAllVoted.
 }
 
 function endRound() {
@@ -351,8 +252,9 @@ function checkAllSubmitted() {
 }
 
 function checkAllVoted() {
-  const total = Object.keys(game.players).length;
-  const done = Object.values(game.players).filter(p => p.hasVoted).length;
+  const humanPlayers = Object.values(game.players).filter(p => !p.isAI);
+  const total = humanPlayers.length;
+  const done = humanPlayers.filter(p => p.hasVoted).length;
   if (done >= total && total > 0) {
     clearInterval(game.timer);
     endRound();
@@ -457,8 +359,14 @@ io.on('connection', socket => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`\nBranded is running!`);
-  console.log(`  Host screen : http://localhost:${PORT}/host`);
-  console.log(`  Players join: http://localhost:${PORT}\n`);
+
+registerDaily(app).then(() => {
+  server.listen(PORT, () => {
+    console.log(`\nBranded is running!`);
+    console.log(`  Host screen : http://localhost:${PORT}/host`);
+    console.log(`  Players join: http://localhost:${PORT}\n`);
+  });
+}).catch(err => {
+  console.error('Failed to initialize Daily Mode, not starting:', err);
+  process.exit(1);
 });
